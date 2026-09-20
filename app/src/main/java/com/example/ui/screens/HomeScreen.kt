@@ -50,6 +50,7 @@ fun HomeScreen(
 
     // Category movie lists
     var trendingMovies by remember { mutableStateOf<List<CtgMovie>>(emptyList()) }
+    var bongoVideos by remember { mutableStateOf<List<CtgMovie>>(emptyList()) }
     var hollywoodMovies by remember { mutableStateOf<List<CtgMovie>>(emptyList()) }
     var bollywoodMovies by remember { mutableStateOf<List<CtgMovie>>(emptyList()) }
     var banglaMovies by remember { mutableStateOf<List<CtgMovie>>(emptyList()) }
@@ -70,7 +71,10 @@ fun HomeScreen(
             // 2. Live TV Channels (for circular display)
             liveChannels = mediaRepository.getChannels()
 
-            // 3. Hollywood
+            // 3. Bongo BD Exclusives, Web Series & Natoks
+            bongoVideos = mediaRepository.getBongoVideos()
+
+            // 4. Hollywood
             val hollywoodRes = ApiClient.fetchCtgMovies(library = 1, page = 2, sort = "createdAt")
             hollywoodMovies = hollywoodRes.data
 
@@ -165,6 +169,66 @@ fun HomeScreen(
                 }
             }
             Spacer(modifier = Modifier.height(18.dp))
+        }
+
+        // ----------------------------------------------------
+        // BONGO BD EXCLUSIVES & DRAMAS (বঙ্গ ওরিজিনালস ও নাটক)
+        // ----------------------------------------------------
+        if (bongoVideos.isNotEmpty()) {
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            color = Color(0xFFE50914),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = "BONGO",
+                                color = Color.White,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "বঙ্গ এক্সক্লুসিভ ও নাটক (Bongo BD)",
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "হিট নাটক, ওরিজিনালস ও বাংলা ওয়েব সিরিজ",
+                                color = TextMuted,
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
+                    TextButton(onClick = onNavigateToMovies) {
+                        Text("সব দেখুন", color = BrandRed, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(bongoVideos) { movie ->
+                        MoviePosterCard(
+                            movie = movie,
+                            onClick = { onSelectMovie(movie.id) }
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(18.dp))
+            }
         }
 
         // ----------------------------------------------------
@@ -349,7 +413,7 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(18.dp))
                 SectionHeader(
                     title = LanguageManager.get("fast_downloads"),
-                    subtitle = "MoviesMod, UHD, 480p, 720p, 1080p লিংক",
+                    subtitle = "Mukul Movies • সরাসরি ডাউনলোড ও ব্রাউজিং",
                     onSeeAllClick = onNavigateToExtractor
                 )
                 LazyRow(
@@ -439,7 +503,7 @@ private fun CircularChannelAvatar(
             modifier = Modifier.size(68.dp),
             contentAlignment = Alignment.Center
         ) {
-            // Glowing Gradient Border Ring
+            // Glowing Gradient Border Ring (Auth-Style Orange Fire Gradient)
             Box(
                 modifier = Modifier
                     .size(68.dp)
@@ -447,10 +511,11 @@ private fun CircularChannelAvatar(
                     .background(
                         Brush.sweepGradient(
                             listOf(
-                                BrandRed,
-                                Color(0xFFFF5722),
-                                CyanAccent,
-                                BrandRed
+                                AuthBrandGradientStart,
+                                AuthBrandPrimary,
+                                Color(0xFFFFB020),
+                                AuthBrandGradientEnd,
+                                AuthBrandGradientStart
                             )
                         )
                     )
@@ -534,22 +599,40 @@ private fun SectionHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                color = Color.White,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Elegant Auth-Style Vertical Accent Pill
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(28.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(AuthBrandGradientStart, AuthBrandGradientEnd)
+                        )
+                    )
             )
-            Text(
-                text = subtitle,
-                color = TextMuted,
-                fontSize = 10.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Column {
+                Text(
+                    text = title,
+                    color = TextPrimary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = subtitle,
+                    color = TextMuted,
+                    fontSize = 10.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
 
         TextButton(
@@ -558,9 +641,9 @@ private fun SectionHeader(
         ) {
             Text(
                 text = "সব দেখুন >",
-                color = CyanAccent,
+                color = AuthBrandPrimary,
                 fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Bold
             )
         }
     }

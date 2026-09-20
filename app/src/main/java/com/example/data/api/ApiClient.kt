@@ -584,4 +584,265 @@ object ApiClient {
             emptyList()
         }
     }
+
+    // 11. Bongo BD Movies, Web Series & Natoks
+    private val bongoMoviesCache = java.util.concurrent.ConcurrentHashMap<Long, CtgMovie>()
+
+    suspend fun getBongoMovieById(id: Long): CtgMovie? {
+        if (bongoMoviesCache.containsKey(id)) {
+            return bongoMoviesCache[id]
+        }
+        val list = fetchBongoVideos()
+        return list.find { it.id == id }
+    }
+
+    suspend fun fetchBongoVideos(): List<CtgMovie> = withContext(Dispatchers.IO) {
+        if (bongoMoviesCache.isNotEmpty()) {
+            return@withContext bongoMoviesCache.values.toList()
+        }
+
+        // Base curated Bongo BD Originals & Hit Web Series with verified streaming links
+        val curatedBongoList = mutableListOf(
+            CtgMovie(
+                id = -90001L,
+                title = "Female 4 (2024)",
+                original_title = "Female 4 Bongo Original",
+                year = 2024,
+                poster_path = "https://i.ibb.co/nyfwvrg/20250619-074646.jpg",
+                backdrop_path = "https://i.ibb.co/nyfwvrg/20250619-074646.jpg",
+                release_date = "2024-04-11",
+                online_rating = 9.2,
+                user_rating = 9.4,
+                genre = "Bongo Original, Comedy, Natok",
+                casts = "Ziaul Faruq Apurba, Marzuk Russell, Ziaul Hoque Polash, Saraf Ahmed Zibon",
+                overview = "The most popular Bangladeshi comedy franchise from Kajal Arefin Ome and Bongo BD. The Battery Goli boys return with new hilarious misadventures and chaos.",
+                url = "https://pub-01c40ff5657b429fa6c8cb74903caf8e.r2.dev/CINEFREAK.NET%20-%20Female%204%20(2024)%20WEB-DL%20[Bengali]%20BongoBD%20720p.mkv",
+                imdb_id = "tt32185610"
+            ),
+            CtgMovie(
+                id = -90002L,
+                title = "Paap (2023) Web Series",
+                original_title = "Paap - Bongo Original Series",
+                year = 2023,
+                poster_path = "https://cdn.bongo-solutions.com/919f93a7-400e-4149-a70d-204beb589074/content/fedf967e-f5e1-4c72-b394-6cf4229b67aa/2f2a30d5-7f4e-4e13-a378-0c62c3d10ee2.jpg",
+                backdrop_path = "https://cdn.bongo-solutions.com/919f93a7-400e-4149-a70d-204beb589074/content/fedf967e-f5e1-4c72-b394-6cf4229b67aa/2f2a30d5-7f4e-4e13-a378-0c62c3d10ee2.jpg",
+                release_date = "2023-04-20",
+                online_rating = 8.7,
+                user_rating = 8.9,
+                genre = "Bongo Original, Crime, Mystery, Thriller",
+                casts = "Puja Cherry, Zakia Bari Mamo, Aman Reza",
+                overview = "A murder mystery set during a lavish family puja celebration. Dark family secrets unfold as the police investigator uncovers shocking betrayal.",
+                url = "https://pixeldrain.dev/api/file/jWwZ88kD?download"
+            ),
+            CtgMovie(
+                id = -90003L,
+                title = "How Sweet (2025)",
+                original_title = "How Sweet - Bongo BD Original",
+                year = 2025,
+                poster_path = "https://i.ibb.co/Nn3BsvW5/20250601-131751.jpg",
+                backdrop_path = "https://i.ibb.co/Nn3BsvW5/20250601-131751.jpg",
+                release_date = "2025-01-14",
+                online_rating = 8.8,
+                user_rating = 9.0,
+                genre = "Bongo BD, Romance, Drama",
+                casts = "Ziaul Faruq Apurba, Tasnia Farin",
+                overview = "A romantic journey of two contrasting souls discovering unexpected chemistry through sweet and bittersweet moments in modern Dhaka.",
+                url = "https://pub-01c40ff5657b429fa6c8cb74903caf8e.r2.dev/TG:%20@SR_PREMIUM%20-%20How%20Sweet%20(2025)%20WEB-DL%20[Bengali]%20BongoBD%202160p.mkv"
+            ),
+            CtgMovie(
+                id = -90004L,
+                title = "Female 3 (2023)",
+                original_title = "Female 3 Bongo Original",
+                year = 2023,
+                poster_path = "https://i.ibb.co/tTXCYTky/20250619-074623.jpg",
+                backdrop_path = "https://i.ibb.co/tTXCYTky/20250619-074623.jpg",
+                release_date = "2023-06-29",
+                online_rating = 9.1,
+                user_rating = 9.3,
+                genre = "Bongo Original, Comedy, Natok",
+                casts = "Marzuk Russell, Mishu Sabbir, Ziaul Hoque Polash, Chashi Alam",
+                overview = "The Battery Goli residents deal with the grand arrival of an unexpected marriage proposal and street gang rivalry.",
+                url = "https://pixeldrain.dev/api/file/ncAaX1fE?download"
+            ),
+            CtgMovie(
+                id = -90005L,
+                title = "Shit Happens - Kapjhap (2024)",
+                original_title = "Kapjhap - Bongo Web Series",
+                year = 2024,
+                poster_path = "https://i.ibb.co.com/MpkLG6n/Shit-Happens-Kapjhap-2024-S01-E01-03-Bengali-Dubbed-ORG-Bongo-WEB-DL-H264-AAC-1080p-720p-480p-Downlo.webp.webp",
+                backdrop_path = "https://i.ibb.co.com/MpkLG6n/Shit-Happens-Kapjhap-2024-S01-E01-03-Bengali-Dubbed-ORG-Bongo-WEB-DL-H264-AAC-1080p-720p-480p-Downlo.webp.webp",
+                release_date = "2024-05-18",
+                online_rating = 8.5,
+                user_rating = 8.6,
+                genre = "Bongo Series, Comedy, Drama",
+                casts = "Shamol Mawla, Nazia Haque Ova",
+                overview = "Bongo exclusive youth series packed with rapid comic turns, relationship dilemmas, and contemporary city life mishaps.",
+                url = "https://pixeldrain.dev/api/file/zsgTirVb?download"
+            ),
+            CtgMovie(
+                id = -90006L,
+                title = "Surongo (2023)",
+                original_title = "Surongo - Superhit Movie",
+                year = 2023,
+                poster_path = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT7UkHJogQ1QOihEwmK67-zQz9Pk3ie1408anxnX7aekiaWq9VhpJV1MiW2&s=10",
+                backdrop_path = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT7UkHJogQ1QOihEwmK67-zQz9Pk3ie1408anxnX7aekiaWq9VhpJV1MiW2&s=10",
+                release_date = "2023-06-29",
+                online_rating = 9.3,
+                user_rating = 9.5,
+                genre = "Bangla Movie, Crime, Thriller, Heist",
+                casts = "Afran Nisho, Toma Mirza, Mostafa Monwar",
+                overview = "Masud, an electrician, goes to extreme lengths to satisfy his wife's ambitions, orchestrating an audacious bank tunnel heist that grips the nation.",
+                url = "https://pixeldrain.dev/api/file/XLydnsWL?download"
+            ),
+            CtgMovie(
+                id = -90007L,
+                title = "Female 2 (2022)",
+                original_title = "Female 2 Bongo Hit",
+                year = 2022,
+                poster_path = "https://i.ibb.co/hFYFJbVw/20250619-074628.jpg",
+                backdrop_path = "https://i.ibb.co/hFYFJbVw/20250619-074628.jpg",
+                release_date = "2022-07-10",
+                online_rating = 8.9,
+                user_rating = 9.0,
+                genre = "Bongo Original, Comedy",
+                casts = "Marzuk Russell, Ziaul Hoque Polash, Chashi Alam",
+                overview = "The second chapter of the hilarious Battery Goli story featuring crazy local election politics and wedding confusion.",
+                url = "https://pixeldrain.dev/api/file/QKZZNfDc?download"
+            ),
+            CtgMovie(
+                id = -90008L,
+                title = "Female (2021)",
+                original_title = "Female - The Beginning",
+                year = 2021,
+                poster_path = "https://i.ibb.co/9zb4T2M/20250619-074638.jpg",
+                backdrop_path = "https://i.ibb.co/9zb4T2M/20250619-074638.jpg",
+                release_date = "2021-07-21",
+                online_rating = 9.0,
+                user_rating = 9.2,
+                genre = "Bongo Original, Comedy, Natok",
+                casts = "Marzuk Russell, Polash, Mishu Sabbir",
+                overview = "Where it all started! The sudden presence of an attractive newcomer shakes the bachelor neighborhood to its core.",
+                url = "https://pixeldrain.dev/api/file/FDX9JfNn?download"
+            ),
+            CtgMovie(
+                id = -90009L,
+                title = "Meyeti Ekhon Kothay Jabe (2017)",
+                original_title = "Meyeti Ekhon Kothay Jabe BongoBD",
+                year = 2017,
+                poster_path = "https://i.ibb.co/yT4Bxbg/20250531-202326.jpg",
+                backdrop_path = "https://i.ibb.co/yT4Bxbg/20250531-202326.jpg",
+                release_date = "2017-03-10",
+                online_rating = 8.3,
+                user_rating = 8.5,
+                genre = "BongoBD, Drama, Romance",
+                casts = "Shahriaz, Falguni Rahman Jolly, Raisul Islam Asad",
+                overview = "An acclaimed Bangladeshi drama of love, society, and destiny in riverine coastal Bangladesh.",
+                url = "https://pub-01c40ff5657b429fa6c8cb74903caf8e.r2.dev/CINEFREAK.TOP%20-%20Meyeti%20Ekhon%20Kothay%20Jabe%20(2017)%20WEB-DL%20[Bengali]%20BongoBD%201080p.mkv"
+            ),
+            CtgMovie(
+                id = -90010L,
+                title = "Paap Kahini (2025)",
+                original_title = "Paap Kahini S01",
+                year = 2025,
+                poster_path = "https://i.ibb.co/7N6GQ399/20250610-085120.jpg",
+                backdrop_path = "https://i.ibb.co/7N6GQ399/20250610-085120.jpg",
+                release_date = "2025-02-01",
+                online_rating = 8.6,
+                user_rating = 8.8,
+                genre = "Bongo BD, Crime, Mystery",
+                casts = "Shohel Mondol, Nazifa Tushi",
+                overview = "A dark psychological thriller unveiling deep rooted corruption and deceit behind an unsolved kidnapping.",
+                url = "https://pixeldrain.dev/api/file/uXj8tKaq?download"
+            ),
+            CtgMovie(
+                id = -90011L,
+                title = "Bhanumathi & Ramakrishna",
+                original_title = "Tukhor Premer Golpo - Bongo",
+                year = 2024,
+                poster_path = "https://i.ibb.co.com/12SMnv8/Bhanumathi-Ramakrishna-Tukhor-Premer-Golpo-2024-Bengali-Dubbed-ORG-Bongo-WEB-DL-H264-AAC-1080p-720p.webp",
+                backdrop_path = "https://i.ibb.co.com/12SMnv8/Bhanumathi-Ramakrishna-Tukhor-Premer-Golpo-2024-Bengali-Dubbed-ORG-Bongo-WEB-DL-H264-AAC-1080p-720p.webp",
+                release_date = "2024-03-01",
+                online_rating = 8.4,
+                user_rating = 8.5,
+                genre = "Bongo Dubbed, Romance, Drama",
+                casts = "Naveen Chandra, Salony Luthra",
+                overview = "A sweet, mature love story of thirty-somethings tackling expectations, career pressures, and romance.",
+                url = "https://pixeldrain.dev/api/file/zg8ibJLR?download"
+            ),
+            CtgMovie(
+                id = -90012L,
+                title = "Dramadol (2015)",
+                original_title = "Dramadol Bangla Natok",
+                year = 2015,
+                poster_path = "https://i.ibb.co/Jw8h8jx2/20250527-180848.jpg",
+                backdrop_path = "https://i.ibb.co/Jw8h8jx2/20250527-180848.jpg",
+                release_date = "2015-08-12",
+                online_rating = 8.7,
+                user_rating = 8.9,
+                genre = "Bangla Natok, Comedy",
+                casts = "Mosharraf Karim, Robena Reza Jui",
+                overview = "Mosharraf Karim's timeless comedy drama depicting theater troupe rivalries and quirky backstage relationships.",
+                url = "https://pixeldrain.dev/api/file/D2yyrEVX?download"
+            )
+        )
+
+        // Dynamically fetch and merge additional Bongo titles from live playlist
+        try {
+            val playlistUrl = "https://raw.githubusercontent.com/abusaeeidx/Movie-Playlist-Auto-update/main/Bangla_Movies.m3u"
+            val req = Request.Builder().url(playlistUrl).build()
+            val res = client.newCall(req).execute()
+            val body = res.body?.string()
+            if (!body.isNullOrEmpty()) {
+                var nextDynamicId = -91000L
+                var currentTitle = ""
+                var currentLogo = ""
+                for (line in body.lines()) {
+                    val trimmed = line.trim()
+                    if (trimmed.startsWith("#EXTINF")) {
+                        if (trimmed.contains("tvg-logo=\"")) {
+                            currentLogo = trimmed.substringAfter("tvg-logo=\"").substringBefore("\"")
+                        }
+                        val namePart = trimmed.substringAfterLast(",")
+                        if (namePart.isNotBlank()) {
+                            currentTitle = namePart.trim()
+                        }
+                    } else if (trimmed.startsWith("http")) {
+                        if (currentTitle.isNotBlank() && (
+                            currentTitle.contains("bongo", ignoreCase = true) ||
+                            currentTitle.contains("female", ignoreCase = true) ||
+                            currentTitle.contains("paap", ignoreCase = true) ||
+                            trimmed.contains("bongo", ignoreCase = true)
+                        )) {
+                            if (curatedBongoList.none { it.title.equals(currentTitle, ignoreCase = true) }) {
+                                curatedBongoList.add(
+                                    CtgMovie(
+                                        id = nextDynamicId--,
+                                        title = currentTitle,
+                                        original_title = "Bongo BD Video",
+                                        year = 2024,
+                                        poster_path = currentLogo.ifBlank { "https://i.ibb.co/nyfwvrg/20250619-074646.jpg" },
+                                        backdrop_path = currentLogo.ifBlank { "https://i.ibb.co/nyfwvrg/20250619-074646.jpg" },
+                                        online_rating = 8.5,
+                                        genre = "Bongo BD, Bangla",
+                                        url = trimmed,
+                                        overview = "$currentTitle - Stream exclusively on Mukul Plus Bongo BD section."
+                                    )
+                                )
+                            }
+                        }
+                        currentTitle = ""
+                        currentLogo = ""
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching dynamic Bongo playlist", e)
+        }
+
+        curatedBongoList.forEach { movie ->
+            bongoMoviesCache[movie.id] = movie
+        }
+
+        curatedBongoList
+    }
 }

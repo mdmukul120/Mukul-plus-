@@ -1,299 +1,183 @@
 package com.example.ui.screens
 
+import android.annotation.SuppressLint
+import android.graphics.Bitmap
+import android.view.ViewGroup
+import android.webkit.*
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import com.example.data.api.ApiClient
-import com.example.data.model.ExtractorPost
-import com.example.data.model.ExtractorProvider
-import com.example.ui.components.FilterChipItem
-import com.example.ui.theme.*
+import androidx.compose.ui.viewinterop.AndroidView
+import com.example.ui.theme.AuthBrandPrimary
+import com.example.ui.theme.CinemaBackground
+import com.example.ui.theme.CinemaSurface
 
+private const val MUKUL_MOVIES_URL = "https://mukul-movies.ai.studio/"
+
+@SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun ExtractorScreen(
-    onSelectPost: (ExtractorPost) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    var providers by remember { mutableStateOf<List<ExtractorProvider>>(emptyList()) }
-    var selectedProvider by remember { mutableStateOf("moviesmod") }
-    var posts by remember { mutableStateOf<List<ExtractorPost>>(emptyList()) }
+    var webViewInstance by remember { mutableStateOf<WebView?>(null) }
+    var canGoBack by remember { mutableStateOf(false) }
+    var canGoForward by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
-    var searchQuery by remember { mutableStateOf("") }
-    var currentPage by remember { mutableIntStateOf(1) }
+    var progress by remember { mutableIntStateOf(0) }
 
-    // Load Providers list
-    LaunchedEffect(Unit) {
-        providers = ApiClient.fetchExtractorProviders()
-        if (providers.isNotEmpty() && selectedProvider.isEmpty()) {
-            selectedProvider = providers.first().id
-        }
+    // System / Hardware back button navigates inside the WebView history
+    BackHandler(enabled = canGoBack) {
+        webViewInstance?.goBack()
     }
 
-    // Load Posts for selected provider
-    LaunchedEffect(selectedProvider, currentPage, searchQuery) {
-        isLoading = true
-        posts = ApiClient.fetchExtractorPosts(
-            provider = selectedProvider,
-            page = currentPage,
-            filter = searchQuery
-        )
-        isLoading = false
-    }
-
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(CinemaBackground)
     ) {
-        // Header
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Text(
-                text = "মুভি এক্সট্রাক্টর ও ডাউনলোড প্রোভাইডার",
-                color = Color.White,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "বিভিন্ন প্রোভাইডার থেকে সরাসরি হাই-স্পিড ডাউনলোড ও স্ট্রিম লিংক",
-                color = TextMuted,
-                fontSize = 11.sp,
-                modifier = Modifier.padding(top = 2.dp)
-            )
+        // Embedded Fullscreen In-App Browser (No Top Header)
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { ctx ->
+                WebView(ctx).apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                    setBackgroundColor(android.graphics.Color.TRANSPARENT)
 
-            Spacer(modifier = Modifier.height(10.dp))
+                    settings.apply {
+                        javaScriptEnabled = true
+                        domStorageEnabled = true
+                        databaseEnabled = true
+                        useWideViewPort = true
+                        loadWithOverviewMode = true
+                        setSupportZoom(true)
+                        builtInZoomControls = true
+                        displayZoomControls = false
+                        allowFileAccess = true
+                        allowContentAccess = true
+                        mediaPlaybackRequiresUserGesture = false
+                        mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                        userAgentString = settings.userAgentString + " MukulPlusApp/1.0"
+                    }
 
-            // Search within provider
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = {
-                    searchQuery = it
-                    currentPage = 1
-                },
-                placeholder = { Text("প্রোভাইডারে খুঁজুন (Search Title)", color = TextMuted, fontSize = 12.sp) },
-                leadingIcon = {
-                    Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = TextMuted)
-                },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { searchQuery = ""; currentPage = 1 }) {
-                            Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", tint = TextMuted)
+                    webViewClient = object : WebViewClient() {
+                        override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                            super.onPageStarted(view, url, favicon)
+                            isLoading = true
+                            canGoBack = view?.canGoBack() == true
+                            canGoForward = view?.canGoForward() == true
+                        }
+
+                        override fun onPageFinished(view: WebView?, url: String?) {
+                            super.onPageFinished(view, url)
+                            isLoading = false
+                            canGoBack = view?.canGoBack() == true
+                            canGoForward = view?.canGoForward() == true
+                        }
+
+                        override fun shouldOverrideUrlLoading(
+                            view: WebView?,
+                            request: WebResourceRequest?
+                        ): Boolean {
+                            return false // Open all links inside this WebView
                         }
                     }
-                },
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = CinemaSurface,
-                    unfocusedContainerColor = CinemaSurface,
-                    focusedBorderColor = BrandRed,
-                    unfocusedBorderColor = CinemaBorder,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
-                ),
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.fillMaxWidth()
-            )
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Providers horizontal scroll
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(providers) { provider ->
-                    FilterChipItem(
-                        label = provider.name,
-                        selected = selectedProvider == provider.id,
-                        onClick = {
-                            selectedProvider = provider.id
-                            currentPage = 1
+                    webChromeClient = object : WebChromeClient() {
+                        override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                            progress = newProgress
+                            if (newProgress == 100) {
+                                isLoading = false
+                            }
                         }
-                    )
+                    }
+
+                    loadUrl(MUKUL_MOVIES_URL)
+                    webViewInstance = this
                 }
+            },
+            update = { view ->
+                webViewInstance = view
             }
+        )
+
+        // Slim top progress bar when loading
+        if (isLoading && progress < 100) {
+            LinearProgressIndicator(
+                progress = { progress / 100f },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .align(Alignment.TopCenter),
+                color = AuthBrandPrimary,
+                trackColor = Color.Transparent
+            )
         }
 
-        // Posts Grid
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = BrandRed)
-            }
-        } else if (posts.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+        // Floating Minimal In-Page Navigation Controls (Bottom-Right Floating Mini Bar)
+        if (canGoBack || canGoForward) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+                shape = MaterialTheme.shapes.extraLarge,
+                color = CinemaSurface.copy(alpha = 0.9f),
+                tonalElevation = 6.dp,
+                shadowElevation = 8.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x33FFFFFF))
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("কোনো মুভি পাওয়া যায়নি", color = TextSecondary, fontSize = 14.sp)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = {
-                            searchQuery = ""
-                            currentPage = 1
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = BrandRed)
-                    ) {
-                        Text("পুনরায় চেষ্টা করুন")
-                    }
-                }
-            }
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 150.dp),
-                contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(posts) { post ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelectPost(post) },
-                        colors = CardDefaults.cardColors(containerColor = CinemaSurface),
-                        shape = RoundedCornerShape(10.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-                    ) {
-                        Column {
-                            // Poster image
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(200.dp)
-                                    .background(CinemaSurfaceVariant)
-                            ) {
-                                if (!post.image.isNullOrEmpty()) {
-                                    AsyncImage(
-                                        model = ImageRequest.Builder(context)
-                                            .data(post.image)
-                                            .crossfade(true)
-                                            .build(),
-                                        contentDescription = post.title,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
-                                }
-
-                                // Provider tag badge
-                                Surface(
-                                    color = BrandRed,
-                                    shape = RoundedCornerShape(4.dp),
-                                    modifier = Modifier
-                                        .align(Alignment.TopStart)
-                                        .padding(6.dp)
-                                ) {
-                                    Text(
-                                        text = post.provider.uppercase(),
-                                        color = Color.White,
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                    )
-                                }
-
-                                // Download & Stream icon button
-                                Surface(
-                                    color = Color(0xCC000000),
-                                    shape = RoundedCornerShape(4.dp),
-                                    modifier = Modifier
-                                        .align(Alignment.BottomEnd)
-                                        .padding(6.dp)
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Download,
-                                            contentDescription = null,
-                                            tint = CyanAccent,
-                                            modifier = Modifier.size(12.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(2.dp))
-                                        Text(
-                                            text = "LINKS",
-                                            color = CyanAccent,
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-                            }
-
-                            // Post Title
-                            Column(modifier = Modifier.padding(8.dp)) {
-                                Text(
-                                    text = post.title,
-                                    color = TextPrimary,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                    lineHeight = 15.sp
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Pagination Row
-                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (currentPage > 1) {
-                            OutlinedButton(
-                                onClick = { currentPage -= 1 },
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
-                            ) {
-                                Text("Previous Page")
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                        }
-                        Text(
-                            text = "Page $currentPage",
-                            color = CyanAccent,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Button(
-                            onClick = { currentPage += 1 },
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = BrandRed)
+                Row(
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (canGoBack) {
+                        IconButton(
+                            onClick = { webViewInstance?.goBack() },
+                            modifier = Modifier.size(36.dp)
                         ) {
-                            Text("Next Page")
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
                         }
+                    }
+                    if (canGoForward) {
+                        IconButton(
+                            onClick = { webViewInstance?.goForward() },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowForward,
+                                contentDescription = "Forward",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = { webViewInstance?.reload() },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Reload",
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                 }
             }

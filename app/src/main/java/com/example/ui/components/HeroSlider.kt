@@ -190,9 +190,10 @@ fun HeroSlider(
                     ) {
                         Button(
                             onClick = { onMovieClick(movie) },
-                            colors = ButtonDefaults.buttonColors(containerColor = BrandRed),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                            colors = ButtonDefaults.buttonColors(containerColor = AuthBrandPrimary),
+                            shape = RoundedCornerShape(12.dp),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
+                            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.PlayArrow,
@@ -200,7 +201,7 @@ fun HeroSlider(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("এখন দেখুন", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text("এখন দেখুন", fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
                         }
 
                         OutlinedButton(
@@ -208,8 +209,9 @@ fun HeroSlider(
                             colors = ButtonDefaults.outlinedButtonColors(
                                 contentColor = if (favorite) GoldRating else Color.White
                             ),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, if (favorite) GoldRating else Color(0x66FFFFFF)),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                         ) {
                             Icon(
                                 imageVector = if (favorite) Icons.Default.Check else Icons.Default.Add,

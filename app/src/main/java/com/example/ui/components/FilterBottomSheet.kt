@@ -210,11 +210,14 @@ fun FilterBottomSheet(
                         onApply()
                         onDismiss()
                     },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary),
-                    shape = RoundedCornerShape(10.dp)
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CinemaBorder),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("রিসেট (Reset)")
+                    Text("রিসেট (Reset)", fontWeight = FontWeight.SemiBold)
                 }
 
                 Button(
@@ -222,11 +225,14 @@ fun FilterBottomSheet(
                         onApply()
                         onDismiss()
                     },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = BrandRed),
-                    shape = RoundedCornerShape(10.dp)
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AuthBrandPrimary),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("ফিল্টার প্রয়োগ করুন", fontWeight = FontWeight.Bold)
+                    Text("ফিল্টার প্রয়োগ করুন", fontWeight = FontWeight.ExtraBold)
                 }
             }
 

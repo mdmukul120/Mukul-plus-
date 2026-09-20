@@ -80,9 +80,13 @@ fun MovieDetailScreen(
     LaunchedEffect(movieId, extractorLink) {
         isLoading = true
         try {
-            // 1. CtgHall Detail if ID is provided
-            if (movieId != null && movieId > 0) {
-                val movie = ApiClient.fetchCtgMovieDetail(movieId)
+            // 1. CtgHall or Bongo Movie Detail if ID is provided
+            if (movieId != null) {
+                val movie = if (movieId > 0) {
+                    ApiClient.fetchCtgMovieDetail(movieId)
+                } else {
+                    mediaRepository.getMovieById(movieId) ?: ApiClient.getBongoMovieById(movieId)
+                }
                 ctgMovie = movie
                 val streamUrl = movie?.getFullStreamUrl()
                 if (!streamUrl.isNullOrEmpty()) {
@@ -356,19 +360,22 @@ fun MovieDetailScreen(
                     // Quick Action Buttons (Stream / Download / Browser)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Button(
                             onClick = {
                                 isPlayingInApp = true
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = BrandRed),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.weight(1f)
+                            colors = ButtonDefaults.buttonColors(containerColor = AuthBrandPrimary),
+                            shape = RoundedCornerShape(12.dp),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp)
                         ) {
                             Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("এখন চালান (Play)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("এখন চালান (Play)", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                         }
 
                         OutlinedButton(
@@ -381,8 +388,11 @@ fun MovieDetailScreen(
                                 }
                             },
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.weight(1f)
+                            border = androidx.compose.foundation.BorderStroke(1.dp, CinemaBorder),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp)
                         ) {
                             Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(4.dp))

@@ -121,12 +121,13 @@ fun LiveTvScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = CinemaSurface,
                     unfocusedContainerColor = CinemaSurface,
-                    focusedBorderColor = BrandRed,
+                    focusedBorderColor = AuthBrandPrimary,
                     unfocusedBorderColor = CinemaBorder,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary,
+                    cursorColor = AuthBrandPrimary
                 ),
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth()
             )
 

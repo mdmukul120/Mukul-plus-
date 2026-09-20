@@ -223,7 +223,7 @@ fun MukulPlusApp() {
 
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.CloudDownload, contentDescription = null, tint = if (currentTab == ScreenTab.EXTRACTOR) BrandRed else TextSecondary) },
-                        label = { Text("ডাউনলোড লিংক ও প্রোভাইডার") },
+                        label = { Text("ডাউনলোড (Mukul Movies)") },
                         selected = currentTab == ScreenTab.EXTRACTOR,
                         onClick = {
                             currentTab = ScreenTab.EXTRACTOR
@@ -290,41 +290,43 @@ fun MukulPlusApp() {
         Scaffold(
             containerColor = CinemaBackground,
             topBar = {
-                TopAppBar(
-                    title = {
-                        MukulPlusLogo(iconSize = 30, textSize = 18)
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
-                            Icon(imageVector = Icons.Default.Menu, contentDescription = "Open Sidebar", tint = Color.White)
-                        }
-                    },
-                    actions = {
-                        // 10 Language Switcher Icon
-                        IconButton(onClick = { showLanguageDialog = true }) {
-                            Icon(imageVector = Icons.Default.Translate, contentDescription = "Languages", tint = CyanAccent)
-                        }
+                if (currentTab != ScreenTab.EXTRACTOR) {
+                    TopAppBar(
+                        title = {
+                            MukulPlusLogo(iconSize = 30, textSize = 18)
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
+                                Icon(imageVector = Icons.Default.Menu, contentDescription = "Open Sidebar", tint = Color.White)
+                            }
+                        },
+                        actions = {
+                            // 10 Language Switcher Icon
+                            IconButton(onClick = { showLanguageDialog = true }) {
+                                Icon(imageVector = Icons.Default.Translate, contentDescription = "Languages", tint = CyanAccent)
+                            }
 
-                        // App Auto-Update Icon
-                        IconButton(onClick = { showUpdateDialog = true }) {
-                            Icon(imageVector = Icons.Default.SystemUpdate, contentDescription = "App Updates", tint = Color(0xFF10B981))
-                        }
+                            // App Auto-Update Icon
+                            IconButton(onClick = { showUpdateDialog = true }) {
+                                Icon(imageVector = Icons.Default.SystemUpdate, contentDescription = "App Updates", tint = Color(0xFF10B981))
+                            }
 
-                        // Profile Avatar
-                        IconButton(onClick = { currentTab = ScreenTab.PROFILE }) {
-                            Surface(
-                                color = BrandRed,
-                                shape = CircleShape,
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Person, contentDescription = "Profile", tint = Color.White, modifier = Modifier.size(18.dp))
+                            // Profile Avatar
+                            IconButton(onClick = { currentTab = ScreenTab.PROFILE }) {
+                                Surface(
+                                    color = BrandRed,
+                                    shape = CircleShape,
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.Person, contentDescription = "Profile", tint = Color.White, modifier = Modifier.size(18.dp))
+                                    }
                                 }
                             }
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = CinemaSurface)
-                )
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = CinemaSurface)
+                    )
+                }
             },
             bottomBar = {
                 NavigationBar(
@@ -390,9 +392,7 @@ fun MukulPlusApp() {
                         )
                     }
                     ScreenTab.EXTRACTOR -> {
-                        ExtractorScreen(
-                            onSelectPost = { post -> selectedExtractorPost = post }
-                        )
+                        ExtractorScreen()
                     }
                     ScreenTab.PROFILE -> {
                         ProfileScreen(
@@ -585,8 +585,8 @@ fun AppUpdatesDialog(onDismiss: () -> Unit) {
                     } catch (_: Exception) {}
                     onDismiss()
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = BrandRed),
-                shape = RoundedCornerShape(8.dp)
+                colors = ButtonDefaults.buttonColors(containerColor = AuthBrandPrimary),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
@@ -608,6 +608,6 @@ fun AppUpdatesDialog(onDismiss: () -> Unit) {
 private fun drawerItemColors() = NavigationDrawerItemDefaults.colors(
     selectedContainerColor = CinemaSurfaceVariant,
     unselectedContainerColor = Color.Transparent,
-    selectedTextColor = BrandRedLight,
+    selectedTextColor = AuthBrandPrimary,
     unselectedTextColor = TextSecondary
 )

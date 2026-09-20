@@ -45,6 +45,7 @@ fun MoviesScreen(
     // Filter states
     val menusData by mediaRepository.menusData.collectAsState()
     var selectedCategory by remember { mutableStateOf<CtgCategoryItem?>(null) }
+    var isBongoSelected by remember { mutableStateOf(false) }
     var selectedYear by remember { mutableStateOf<Int?>(null) }
     var selectedGenre by remember { mutableStateOf<String?>(null) }
     var selectedSort by remember { mutableStateOf("createdAt") }
@@ -55,19 +56,33 @@ fun MoviesScreen(
         mediaRepository.getMenus()
     }
 
-    LaunchedEffect(selectedCategory, selectedYear, selectedGenre, selectedSort, currentPage, searchQuery) {
+    LaunchedEffect(selectedCategory, isBongoSelected, selectedYear, selectedGenre, selectedSort, currentPage, searchQuery) {
         isLoading = true
-        val res = ApiClient.fetchCtgMovies(
-            library = selectedCategory?.id ?: 1,
-            page = currentPage,
-            sort = selectedSort,
-            sortOrder = "DESC",
-            search = searchQuery.ifBlank { null },
-            year = selectedYear,
-            genre = selectedGenre
-        )
-        movies = res.data
-        totalPages = res.pages
+        if (isBongoSelected) {
+            val allBongo = mediaRepository.getBongoVideos()
+            movies = if (searchQuery.isNotBlank()) {
+                allBongo.filter {
+                    it.title.contains(searchQuery, ignoreCase = true) ||
+                    (it.casts?.contains(searchQuery, ignoreCase = true) == true) ||
+                    (it.genre?.contains(searchQuery, ignoreCase = true) == true)
+                }
+            } else {
+                allBongo
+            }
+            totalPages = 1
+        } else {
+            val res = ApiClient.fetchCtgMovies(
+                library = selectedCategory?.id ?: 1,
+                page = currentPage,
+                sort = selectedSort,
+                sortOrder = "DESC",
+                search = searchQuery.ifBlank { null },
+                year = selectedYear,
+                genre = selectedGenre
+            )
+            movies = res.data
+            totalPages = res.pages
+        }
         isLoading = false
     }
 
@@ -104,20 +119,22 @@ fun MoviesScreen(
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = CinemaSurface,
                         unfocusedContainerColor = CinemaSurface,
-                        focusedBorderColor = BrandRed,
+                        focusedBorderColor = AuthBrandPrimary,
                         unfocusedBorderColor = CinemaBorder,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        cursorColor = AuthBrandPrimary
                     ),
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.weight(1f)
                 )
 
                 // Filter Button
                 Surface(
                     onClick = { showFilterSheet = true },
-                    shape = RoundedCornerShape(10.dp),
-                    color = if (selectedCategory != null || selectedYear != null || selectedGenre != null) BrandRed else CinemaSurfaceVariant,
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (selectedCategory != null || selectedYear != null || selectedGenre != null) AuthBrandPrimary else CinemaSurfaceVariant,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, if (selectedCategory != null || selectedYear != null || selectedGenre != null) AuthBrandPrimary else CinemaBorder),
                     modifier = Modifier.size(50.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
@@ -139,9 +156,21 @@ fun MoviesScreen(
             ) {
                 item {
                     FilterChipItem(
-                        label = "English",
-                        selected = selectedCategory == null || selectedCategory?.id == 1,
+                        label = "🔥 Bongo BD (বঙ্গ)",
+                        selected = isBongoSelected,
                         onClick = {
+                            isBongoSelected = true
+                            selectedCategory = null
+                            currentPage = 1
+                        }
+                    )
+                }
+                item {
+                    FilterChipItem(
+                        label = "English",
+                        selected = !isBongoSelected && (selectedCategory == null || selectedCategory?.id == 1),
+                        onClick = {
+                            isBongoSelected = false
                             selectedCategory = CtgCategoryItem(1, "English Movies", "MOVIE")
                             currentPage = 1
                         }
@@ -150,8 +179,9 @@ fun MoviesScreen(
                 item {
                     FilterChipItem(
                         label = "Bollywood",
-                        selected = selectedCategory?.id == 4,
+                        selected = !isBongoSelected && selectedCategory?.id == 4,
                         onClick = {
+                            isBongoSelected = false
                             selectedCategory = CtgCategoryItem(4, "Bollywood Movies", "MOVIE")
                             currentPage = 1
                         }
@@ -160,8 +190,9 @@ fun MoviesScreen(
                 item {
                     FilterChipItem(
                         label = "Bangla",
-                        selected = selectedCategory?.id == 6,
+                        selected = !isBongoSelected && selectedCategory?.id == 6,
                         onClick = {
+                            isBongoSelected = false
                             selectedCategory = CtgCategoryItem(6, "Bangla Movies", "MOVIE")
                             currentPage = 1
                         }
@@ -170,8 +201,9 @@ fun MoviesScreen(
                 item {
                     FilterChipItem(
                         label = "South Indian",
-                        selected = selectedCategory?.id == 7,
+                        selected = !isBongoSelected && selectedCategory?.id == 7,
                         onClick = {
+                            isBongoSelected = false
                             selectedCategory = CtgCategoryItem(7, "South Indian Movies", "MOVIE")
                             currentPage = 1
                         }
@@ -180,8 +212,9 @@ fun MoviesScreen(
                 item {
                     FilterChipItem(
                         label = "Anime & Asian",
-                        selected = selectedCategory?.id == 5,
+                        selected = !isBongoSelected && selectedCategory?.id == 5,
                         onClick = {
+                            isBongoSelected = false
                             selectedCategory = CtgCategoryItem(5, "Asian & Anime", "MOVIE")
                             currentPage = 1
                         }

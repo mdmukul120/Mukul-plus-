@@ -69,4 +69,23 @@ class MediaRepository(context: Context) {
         _cachedChannels.value = channels
         return channels
     }
+
+    private val _bongoVideos = MutableStateFlow<List<CtgMovie>>(emptyList())
+    val bongoVideos: StateFlow<List<CtgMovie>> = _bongoVideos.asStateFlow()
+
+    suspend fun getBongoVideos(forceRefresh: Boolean = false): List<CtgMovie> {
+        if (!forceRefresh && _bongoVideos.value.isNotEmpty()) {
+            return _bongoVideos.value
+        }
+        val list = ApiClient.fetchBongoVideos()
+        _bongoVideos.value = list
+        return list
+    }
+
+    suspend fun getMovieById(id: Long): CtgMovie? {
+        if (id < 0) {
+            return ApiClient.getBongoMovieById(id) ?: _bongoVideos.value.find { it.id == id }
+        }
+        return ApiClient.fetchCtgMovieDetail(id)
+    }
 }

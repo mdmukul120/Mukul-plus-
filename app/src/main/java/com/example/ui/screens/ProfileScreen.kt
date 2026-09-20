@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -69,41 +70,47 @@ fun ProfileScreen(
         item {
             Card(
                 colors = CardDefaults.cardColors(containerColor = CinemaSurface),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(20.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, CinemaBorder),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Surface(
-                        color = BrandRed,
-                        shape = CircleShape,
-                        modifier = Modifier.size(72.dp)
+                    Box(
+                        modifier = Modifier
+                            .size(76.dp)
+                            .clip(CircleShape)
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(AuthBrandGradientStart, AuthBrandGradientEnd)
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(40.dp)
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(42.dp)
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
                         text = currentUser?.displayName ?: "User",
-                        color = Color.White,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                        color = TextPrimary,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold
                     )
 
                     Text(
                         text = if (currentUser?.isGuest == true) "গেস্ট মেম্বার (Guest Account)" else (currentUser?.email ?: "প্রিমিয়াম ইউজার"),
-                        color = CyanAccent,
-                        fontSize = 12.sp
+                        color = AuthBrandPrimary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -113,15 +120,15 @@ fun ProfileScreen(
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "${favorites.size}", color = BrandRed, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            Text(text = "${favorites.size}", color = AuthBrandPrimary, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
                             Text(text = "ওয়াচলিস্ট", color = TextSecondary, fontSize = 11.sp)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "10", color = CyanAccent, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            Text(text = "10", color = Color(0xFFFFB020), fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
                             Text(text = "ভাষা সাপোর্ট", color = TextSecondary, fontSize = 11.sp)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "v1.2", color = Color(0xFF10B981), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            Text(text = "v1.2", color = Color(0xFF10B981), fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
                             Text(text = "অটো-আপডেট", color = TextSecondary, fontSize = 11.sp)
                         }
                     }
@@ -234,15 +241,16 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(10.dp))
             Button(
                 onClick = onLogout,
-                colors = ButtonDefaults.buttonColors(containerColor = BrandRed),
-                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AuthBrandPrimary),
+                shape = RoundedCornerShape(14.dp),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp)
+                    .height(52.dp)
             ) {
                 Icon(Icons.Default.ExitToApp, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("লগআউট করুন (Sign Out)", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text("লগআউট করুন (Sign Out)", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
             }
         }
 

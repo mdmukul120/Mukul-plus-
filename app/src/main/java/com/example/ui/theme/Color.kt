@@ -2,24 +2,7 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val CinemaBackground = Color(0xFF090C15)
-val CinemaSurface = Color(0xFF131826)
-val CinemaSurfaceVariant = Color(0xFF1C2438)
-val CinemaBorder = Color(0xFF26334D)
-
-val BrandRed = Color(0xFFE50914)
-val BrandRedLight = Color(0xFFFF334B)
-val BrandRedDark = Color(0xFF9E0B13)
-
-val GoldRating = Color(0xFFFFB800)
-val CyanAccent = Color(0xFF00E5FF)
-val GreenSuccess = Color(0xFF10B981)
-
-val TextPrimary = Color(0xFFF8FAFC)
-val TextSecondary = Color(0xFF94A3B8)
-val TextMuted = Color(0xFF64748B)
-
-// Reference Image Auth & Onboarding Styling Colors
+// Reference Image Auth & Onboarding Styling Colors (Unified Theme)
 val AuthBrandPrimary = Color(0xFFFA4D28)
 val AuthBrandGradientStart = Color(0xFFFF5E36)
 val AuthBrandGradientEnd = Color(0xFFE53915)
@@ -31,11 +14,29 @@ val AuthTextDark = Color(0xFF1A1A1A)
 val AuthTextMuted = Color(0xFF666666)
 val AuthSocialBorder = Color(0xFFE5E7EB)
 
+// Premium OTT Warm Cinema Palette matching Auth / Mukul+ Signature Style
+val CinemaBackground = Color(0xFF0F0E13)
+val CinemaSurface = Color(0xFF1A1721)
+val CinemaSurfaceVariant = Color(0xFF262130)
+val CinemaBorder = Color(0xFF383046)
+
+val BrandRed = Color(0xFFFA4D28)          // Unified with AuthBrandPrimary
+val BrandRedLight = Color(0xFFFF6D47)     // Warm orange-red light
+val BrandRedDark = Color(0xFFD4310E)      // Deep fiery red-orange
+
+val GoldRating = Color(0xFFFFB800)
+val CyanAccent = Color(0xFFFF7A59)        // Harmonized warm peach/coral accent
+val GreenSuccess = Color(0xFF10B981)
+
+val TextPrimary = Color(0xFFFFFBF9)
+val TextSecondary = Color(0xFFD6CED8)
+val TextMuted = Color(0xFF9E94A6)
+
 // Material 3 Color Mappings
 val PrimaryDark = BrandRed
 val OnPrimaryDark = Color.White
-val PrimaryContainerDark = Color(0xFF450A0A)
-val OnPrimaryContainerDark = Color(0xFFFFDADA)
+val PrimaryContainerDark = Color(0xFF3D160D)
+val OnPrimaryContainerDark = Color(0xFFFFECE5)
 
 val SecondaryDark = GoldRating
 val OnSecondaryDark = Color.Black
@@ -44,8 +45,8 @@ val OnSecondaryContainerDark = Color(0xFFFFE082)
 
 val TertiaryDark = CyanAccent
 val OnTertiaryDark = Color.Black
-val TertiaryContainerDark = Color(0xFF004D5A)
-val OnTertiaryContainerDark = Color(0xFFB2EBF2)
+val TertiaryContainerDark = Color(0xFF3B1F17)
+val OnTertiaryContainerDark = Color(0xFFFFE0D6)
 
 val BackgroundDark = CinemaBackground
 val OnBackgroundDark = TextPrimary

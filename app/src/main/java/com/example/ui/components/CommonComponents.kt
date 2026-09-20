@@ -32,7 +32,8 @@ import com.example.ui.theme.*
 fun MukulPlusLogo(
     modifier: Modifier = Modifier,
     iconSize: Int = 36,
-    textSize: Int = 20
+    textSize: Int = 20,
+    textColor: Color = Color.White
 ) {
     Row(
         modifier = modifier,
@@ -42,10 +43,10 @@ fun MukulPlusLogo(
         Box(
             modifier = Modifier
                 .size(iconSize.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(10.dp))
                 .background(
                     Brush.linearGradient(
-                        colors = listOf(BrandRed, BrandRedDark)
+                        colors = listOf(AuthBrandGradientStart, AuthBrandGradientEnd)
                     )
                 ),
             contentAlignment = Alignment.Center
@@ -59,16 +60,16 @@ fun MukulPlusLogo(
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "Mukul",
-                color = Color.White,
+                text = "MUKUL",
+                color = textColor,
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = textSize.sp,
                 letterSpacing = 0.5.sp
             )
             Spacer(modifier = Modifier.width(4.dp))
             Surface(
-                color = BrandRed,
-                shape = RoundedCornerShape(4.dp),
+                color = AuthBrandPrimary,
+                shape = RoundedCornerShape(5.dp),
                 modifier = Modifier.padding(bottom = 2.dp)
             ) {
                 Text(
@@ -76,7 +77,7 @@ fun MukulPlusLogo(
                     color = Color.White,
                     fontWeight = FontWeight.Black,
                     fontSize = (textSize * 0.55f).sp,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                 )
             }
         }
@@ -95,9 +96,10 @@ fun MoviePosterCard(
         modifier = modifier
             .width(width.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = CinemaSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        border = androidx.compose.foundation.BorderStroke(1.dp, CinemaBorder),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Column {
             Box(

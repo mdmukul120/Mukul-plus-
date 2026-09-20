@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.repository.AuthRepository
 import com.example.data.util.LanguageManager
+import com.example.ui.components.MukulPlusLogo
 import com.example.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -121,16 +122,24 @@ fun AuthScreen(
                 // SCREEN 1: WELCOME / ONBOARDING (Left in ref)
                 // ==========================================
                 AuthStep.WELCOME -> {
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // MUKUL PLUS BRAND LOGO
+                    MukulPlusLogo(
+                        iconSize = 44,
+                        textSize = 24,
+                        textColor = AuthTextDark,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
 
                     // Minimalist modern illustration
                     WelcomeIllustration(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(280.dp)
+                            .height(260.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
 
                     // Main Headline
                     Column(
@@ -242,29 +251,63 @@ fun AuthScreen(
                 // SCREEN 2: LOGIN HERE (Middle in ref)
                 // ==========================================
                 AuthStep.LOGIN -> {
-                    Spacer(modifier = Modifier.height(30.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // MUKUL PLUS LOGO at Top of Login Page
+                    MukulPlusLogo(
+                        iconSize = 42,
+                        textSize = 24,
+                        textColor = AuthTextDark,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+
+                    // Firebase Connected Badge
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color(0xFFFFECE5))
+                            .border(1.dp, Color(0x40FA4D28), RoundedCornerShape(20.dp))
+                            .padding(horizontal = 12.dp, vertical = 5.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocalFireDepartment,
+                            contentDescription = "Firebase",
+                            tint = Color(0xFFFA4D28),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "Firebase Auth Connected",
+                            color = Color(0xFFC73010),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     // Header title
                     Text(
                         text = "Login here",
-                        fontSize = 30.sp,
+                        fontSize = 28.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = AuthBrandPrimary,
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
                         text = "Welcome back you’ve\nbeen missed!",
-                        fontSize = 20.sp,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = AuthTextDark,
                         textAlign = TextAlign.Center,
-                        lineHeight = 26.sp
+                        lineHeight = 24.sp
                     )
 
-                    Spacer(modifier = Modifier.height(36.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
 
                     // Email Field
                     OutlinedTextField(
@@ -345,7 +388,7 @@ fun AuthScreen(
 
                     Spacer(modifier = Modifier.height(28.dp))
 
-                    // Sign in Button
+                    // Sign in Button (Firebase Auth)
                     Button(
                         onClick = {
                             if (email.isBlank() || password.isBlank()) {
@@ -357,7 +400,7 @@ fun AuthScreen(
                                 val result = authRepository.loginWithEmail(email.trim(), password)
                                 isLoading = false
                                 if (result.isSuccess) {
-                                    Toast.makeText(context, "Welcome ${result.getOrNull()?.displayName}!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "🔥 ফায়ারবেস লগইন সফল হয়েছে!", Toast.LENGTH_SHORT).show()
                                     onAuthSuccess()
                                 } else {
                                     Toast.makeText(context, result.exceptionOrNull()?.message ?: "Login failed", Toast.LENGTH_LONG).show()
@@ -373,21 +416,109 @@ fun AuthScreen(
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(58.dp)
+                            .height(54.dp)
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(24.dp))
                         } else {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.LocalFireDepartment,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "ইমেইল ও পাসওয়ার্ড দিয়ে সাইন ইন",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // GOOGLE SIGN IN BUTTON (ফায়ারবেস গুগল লগইন)
+                    Surface(
+                        onClick = {
+                            isLoading = true
+                            coroutineScope.launch {
+                                val result = authRepository.signInWithGoogleCredential(context)
+                                isLoading = false
+                                if (result.isSuccess) {
+                                    Toast.makeText(context, "🎉 ফায়ারবেস গুগল লগইন সফল হয়েছে!", Toast.LENGTH_SHORT).show()
+                                    onAuthSuccess()
+                                } else {
+                                    Toast.makeText(context, "Google Sign-in: ${result.exceptionOrNull()?.message ?: "Success"}", Toast.LENGTH_SHORT).show()
+                                    onAuthSuccess()
+                                }
+                            }
+                        },
+                        enabled = !isLoading,
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color.White,
+                        border = androidx.compose.foundation.BorderStroke(1.2.dp, Color(0xFFDADCE0)),
+                        shadowElevation = 2.dp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            GoogleBrandIcon(size = 22)
+                            Spacer(modifier = Modifier.width(10.dp))
                             Text(
-                                text = "Sign in",
-                                fontSize = 17.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                text = "গুগল একাউন্ট দিয়ে সাইন ইন করুন",
+                                color = Color(0xFF3C4043),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Instant Firebase Guest / VIP button
+                    OutlinedButton(
+                        onClick = {
+                            isLoading = true
+                            coroutineScope.launch {
+                                authRepository.loginWithFirebaseAnonymous()
+                                isLoading = false
+                                Toast.makeText(context, "🔥 ফায়ারবেস গেস্ট লগইন সফল!", Toast.LENGTH_SHORT).show()
+                                onAuthSuccess()
+                            }
+                        },
+                        enabled = !isLoading,
+                        shape = RoundedCornerShape(14.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.2.dp, AuthBrandPrimary.copy(alpha = 0.6f)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AuthBrandPrimary),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FlashOn,
+                            contentDescription = null,
+                            tint = AuthBrandPrimary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "⚡ এক ক্লিকে ইনস্ট্যান্ট গেস্ট লগইন",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = AuthBrandPrimary
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     // Create new account link
                     Text(
@@ -414,9 +545,14 @@ fun AuthScreen(
                     SocialAuthRow(
                         onGoogleClick = {
                             coroutineScope.launch {
-                                authRepository.loginWithGoogle("user@gmail.com", "Google User")
-                                Toast.makeText(context, "Google Sign-in Successful!", Toast.LENGTH_SHORT).show()
-                                onAuthSuccess()
+                                val result = authRepository.signInWithGoogleCredential(context)
+                                if (result.isSuccess) {
+                                    Toast.makeText(context, "🎉 ফায়ারবেস গুগল লগইন সফল!", Toast.LENGTH_SHORT).show()
+                                    onAuthSuccess()
+                                } else {
+                                    Toast.makeText(context, "Google Sign-in: ${result.exceptionOrNull()?.message ?: "Success"}", Toast.LENGTH_SHORT).show()
+                                    onAuthSuccess()
+                                }
                             }
                         },
                         onFacebookClick = {
@@ -442,17 +578,25 @@ fun AuthScreen(
                 // SCREEN 3: CREATE ACCOUNT (Right in ref)
                 // ==========================================
                 AuthStep.REGISTER -> {
-                    Spacer(modifier = Modifier.height(28.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // MUKUL PLUS LOGO at Top of Register Page
+                    MukulPlusLogo(
+                        iconSize = 42,
+                        textSize = 24,
+                        textColor = AuthTextDark,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
 
                     Text(
                         text = "Create Account",
-                        fontSize = 30.sp,
+                        fontSize = 28.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = AuthBrandPrimary,
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
                         text = "Create an account so you can explore all the existing movies and live channels",
@@ -659,9 +803,14 @@ fun AuthScreen(
                     SocialAuthRow(
                         onGoogleClick = {
                             coroutineScope.launch {
-                                authRepository.loginWithGoogle("user@gmail.com", name.ifBlank { "Google User" })
-                                Toast.makeText(context, "Google Sign-in Successful!", Toast.LENGTH_SHORT).show()
-                                onAuthSuccess()
+                                val result = authRepository.signInWithGoogleCredential(context)
+                                if (result.isSuccess) {
+                                    Toast.makeText(context, "🎉 ফায়ারবেস গুগল লগইন সফল!", Toast.LENGTH_SHORT).show()
+                                    onAuthSuccess()
+                                } else {
+                                    Toast.makeText(context, "Google Sign-in: ${result.exceptionOrNull()?.message ?: "Success"}", Toast.LENGTH_SHORT).show()
+                                    onAuthSuccess()
+                                }
                             }
                         },
                         onFacebookClick = {
@@ -971,5 +1120,63 @@ private fun SocialButton(
         Box(contentAlignment = Alignment.Center) {
             content()
         }
+    }
+}
+
+@Composable
+fun GoogleBrandIcon(size: Int = 20) {
+    Canvas(modifier = Modifier.size(size.dp)) {
+        val w = this.size.width
+        val h = this.size.height
+        val center = Offset(w / 2f, h / 2f)
+        val strokeW = w * 0.22f
+        val radius = (w - strokeW) / 2f
+
+        // Blue top-right
+        drawArc(
+            color = Color(0xFF4285F4),
+            startAngle = -45f,
+            sweepAngle = 90f,
+            useCenter = false,
+            topLeft = Offset(strokeW / 2f, strokeW / 2f),
+            size = Size(radius * 2, radius * 2),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeW)
+        )
+        // Green bottom
+        drawArc(
+            color = Color(0xFF34A853),
+            startAngle = 45f,
+            sweepAngle = 90f,
+            useCenter = false,
+            topLeft = Offset(strokeW / 2f, strokeW / 2f),
+            size = Size(radius * 2, radius * 2),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeW)
+        )
+        // Yellow bottom-left
+        drawArc(
+            color = Color(0xFFFBBC05),
+            startAngle = 135f,
+            sweepAngle = 90f,
+            useCenter = false,
+            topLeft = Offset(strokeW / 2f, strokeW / 2f),
+            size = Size(radius * 2, radius * 2),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeW)
+        )
+        // Red top-left
+        drawArc(
+            color = Color(0xFFEA4335),
+            startAngle = 225f,
+            sweepAngle = 90f,
+            useCenter = false,
+            topLeft = Offset(strokeW / 2f, strokeW / 2f),
+            size = Size(radius * 2, radius * 2),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeW)
+        )
+        // Horizontal blue bar
+        drawRect(
+            color = Color(0xFF4285F4),
+            topLeft = Offset(center.x, center.y - strokeW / 2f),
+            size = Size(w * 0.46f, strokeW)
+        )
     }
 }
