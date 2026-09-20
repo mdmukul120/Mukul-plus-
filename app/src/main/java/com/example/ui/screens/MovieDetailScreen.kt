@@ -64,6 +64,15 @@ fun MovieDetailScreen(
     var isLoading by remember { mutableStateOf(true) }
     var isPlayingInApp by remember { mutableStateOf(false) }
 
+    // Download & Stream Resolution State
+    var isResolvingDownload by remember { mutableStateOf(false) }
+    var resolvingMessage by remember { mutableStateOf("") }
+    var resolvedServers by remember { mutableStateOf<List<DownloadLink>>(emptyList()) }
+    var showServersDialog by remember { mutableStateOf(false) }
+    var episodesList by remember { mutableStateOf<List<DownloadLink>>(emptyList()) }
+    var showEpisodesDialog by remember { mutableStateOf(false) }
+    var targetDownloadFileName by remember { mutableStateOf("") }
+
     val favorites by mediaRepository.favorites.collectAsState()
     val isFav = movieId != null && favorites.contains(movieId)
 
@@ -85,6 +94,24 @@ fun MovieDetailScreen(
                 if (tmdbIdLong != null) {
                     trailers = ApiClient.fetchTmdbVideos(tmdbIdLong)
                     recommendations = ApiClient.fetchTmdbRecommendations(tmdbIdLong)
+                }
+
+                // Auto-fetch Extractor downloads for this movie title from MoviesMod
+                if (movie != null && extractorLink.isNullOrEmpty()) {
+                    try {
+                        val cleanTitle = movie.title.replace(Regex("[^A-Za-z0-9 ]"), " ").trim()
+                        val keywords = cleanTitle.split(" ").filter { it.length > 2 }.take(2).joinToString(" ")
+                        if (keywords.isNotEmpty()) {
+                            val searchResults = ApiClient.fetchExtractorPosts("moviesmod", filter = keywords, page = 1)
+                            if (searchResults.isNotEmpty()) {
+                                val bestMatch = searchResults.first()
+                                val info = ApiClient.fetchExtractorInfo(bestMatch.link, bestMatch.provider)
+                                if (info != null) {
+                                    extractorInfo = info
+                                }
+                            }
+                        }
+                    } catch (_: Exception) {}
                 }
             }
 
@@ -468,11 +495,59 @@ fun MovieDetailScreen(
                                 quality = dl.quality ?: "HD",
                                 link = dl.link,
                                 onPlay = {
-                                    activeStreamUrl = dl.link
-                                    isPlayingInApp = true
+                                    if (dl.link.contains("archives") || dl.link.contains("episodes")) {
+                                        coroutineScope.launch {
+                                            isResolvingDownload = true
+                                            resolvingMessage = "পর্বের তালিকা সংগ্রহ করা হচ্ছে..."
+                                            episodesList = ApiClient.fetchExtractorEpisodes(dl.link)
+                                            isResolvingDownload = false
+                                            showEpisodesDialog = true
+                                        }
+                                    } else if (dl.link.contains("sid=") || dl.link.contains("unblockedgames") || dl.link.contains("cloud.")) {
+                                        coroutineScope.launch {
+                                            isResolvingDownload = true
+                                            resolvingMessage = "হাই-স্পিড সার্ভার কানেক্ট করা হচ্ছে..."
+                                            val servers = ApiClient.fetchExtractorStream(dl.link)
+                                            isResolvingDownload = false
+                                            if (servers.isNotEmpty()) {
+                                                resolvedServers = servers
+                                                showServersDialog = true
+                                            } else {
+                                                activeStreamUrl = dl.link
+                                                isPlayingInApp = true
+                                            }
+                                        }
+                                    } else {
+                                        activeStreamUrl = dl.link
+                                        isPlayingInApp = true
+                                    }
                                 },
                                 onDownload = {
-                                    startDownload(context, dl.link, "${displayTitle}_${dl.quality}.mp4")
+                                    if (dl.link.contains("archives") || dl.link.contains("episodes")) {
+                                        coroutineScope.launch {
+                                            isResolvingDownload = true
+                                            resolvingMessage = "পর্বের তালিকা সংগ্রহ করা হচ্ছে..."
+                                            episodesList = ApiClient.fetchExtractorEpisodes(dl.link)
+                                            isResolvingDownload = false
+                                            showEpisodesDialog = true
+                                        }
+                                    } else if (dl.link.contains("sid=") || dl.link.contains("unblockedgames") || dl.link.contains("cloud.")) {
+                                        coroutineScope.launch {
+                                            isResolvingDownload = true
+                                            resolvingMessage = "ডাউনলোড সার্ভার তৈরি করা হচ্ছে..."
+                                            val servers = ApiClient.fetchExtractorStream(dl.link)
+                                            isResolvingDownload = false
+                                            if (servers.isNotEmpty()) {
+                                                resolvedServers = servers
+                                                targetDownloadFileName = "${displayTitle}_${dl.quality}.mkv"
+                                                showServersDialog = true
+                                            } else {
+                                                startDownload(context, dl.link, "${displayTitle}_${dl.quality}.mp4")
+                                            }
+                                        }
+                                    } else {
+                                        startDownload(context, dl.link, "${displayTitle}_${dl.quality}.mp4")
+                                    }
                                 },
                                 onCopy = {
                                     copyToClipboard(context, dl.link)
@@ -594,6 +669,180 @@ fun MovieDetailScreen(
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }
+    }
+
+    // 1. Loading Resolution Spinner Dialog
+    if (isResolvingDownload) {
+        AlertDialog(
+            onDismissRequest = { isResolvingDownload = false },
+            containerColor = CinemaSurface,
+            confirmButton = {},
+            text = {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CircularProgressIndicator(color = BrandRed, strokeWidth = 3.dp, modifier = Modifier.size(32.dp))
+                    Text(
+                        text = resolvingMessage.ifEmpty { "ডাউনলোড সার্ভার প্রসেস হচ্ছে..." },
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        )
+    }
+
+    // 2. Episodes List Dialog
+    if (showEpisodesDialog) {
+        AlertDialog(
+            onDismissRequest = { showEpisodesDialog = false },
+            containerColor = CinemaSurface,
+            title = {
+                Text(
+                    text = "পর্ব নির্বাচন করুন (${episodesList.size} Episodes)",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 350.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(episodesList) { ep ->
+                        Surface(
+                            onClick = {
+                                showEpisodesDialog = false
+                                coroutineScope.launch {
+                                    isResolvingDownload = true
+                                    resolvingMessage = "${ep.title} সার্ভার খোঁজা হচ্ছে..."
+                                    val servers = ApiClient.fetchExtractorStream(ep.link)
+                                    isResolvingDownload = false
+                                    if (servers.isNotEmpty()) {
+                                        resolvedServers = servers
+                                        targetDownloadFileName = "${displayTitle}_${ep.title}.mkv"
+                                        showServersDialog = true
+                                    } else {
+                                        startDownload(context, ep.link, "${displayTitle}_${ep.title}.mp4")
+                                    }
+                                }
+                            },
+                            color = CinemaSurfaceVariant,
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Icon(Icons.Default.PlayCircle, contentDescription = null, tint = CyanAccent, modifier = Modifier.size(20.dp))
+                                    Text(text = ep.title, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                }
+                                Icon(Icons.Default.Download, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(18.dp))
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showEpisodesDialog = false }) {
+                    Text("বন্ধ করুন", color = TextSecondary)
+                }
+            }
+        )
+    }
+
+    // 3. Direct Fast Servers Dialog (CF Worker / Resume Worker / G-Drive)
+    if (showServersDialog) {
+        AlertDialog(
+            onDismissRequest = { showServersDialog = false },
+            containerColor = CinemaSurface,
+            icon = {
+                Icon(Icons.Default.CloudDownload, contentDescription = null, tint = CyanAccent, modifier = Modifier.size(32.dp))
+            },
+            title = {
+                Text(
+                    text = "সরাসরি ডাউনলোড সার্ভার",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "নিচের যেকোনো একটি আল্ট্রা-ফাস্ট সার্ভার নির্বাচন করুন:",
+                        color = TextSecondary,
+                        fontSize = 11.sp
+                    )
+
+                    resolvedServers.forEach { server ->
+                        Surface(
+                            color = CinemaSurfaceVariant,
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text(
+                                    text = server.title,
+                                    color = Color.White,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            showServersDialog = false
+                                            activeStreamUrl = server.link
+                                            isPlayingInApp = true
+                                        },
+                                        shape = RoundedCornerShape(6.dp),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(Icons.Default.PlayArrow, contentDescription = null, tint = CyanAccent, modifier = Modifier.size(14.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("প্লে করুন", color = CyanAccent, fontSize = 11.sp)
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            showServersDialog = false
+                                            startDownload(context, server.link, targetDownloadFileName.ifEmpty { "${displayTitle}.mkv" })
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = BrandRed),
+                                        shape = RoundedCornerShape(6.dp),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(14.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("ডাউনলোড", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showServersDialog = false }) {
+                    Text("বন্ধ করুন", color = TextSecondary)
+                }
+            }
+        )
     }
 }
 

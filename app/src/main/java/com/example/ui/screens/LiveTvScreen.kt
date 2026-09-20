@@ -78,11 +78,15 @@ fun LiveTvScreen(
     ) {
         // Embedded Live Player
         if (activeChannel != null) {
-            Box(
-                modifier = Modifier
+            val playerModifier = if (isFullScreen) {
+                Modifier.fillMaxSize()
+            } else {
+                Modifier
                     .fillMaxWidth()
-                    .height(if (isFullScreen) 320.dp else 220.dp)
-                    .background(Color.Black)
+                    .height(270.dp)
+            }
+            Box(
+                modifier = playerModifier.background(Color.Black)
             ) {
                 VideoPlayerView(
                     videoUrl = activeChannel!!.streamUrl,
@@ -93,6 +97,8 @@ fun LiveTvScreen(
                 )
             }
         }
+
+        if (isFullScreen) return@Column
 
         // Search & Category Filters
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {

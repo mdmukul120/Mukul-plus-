@@ -1,8 +1,10 @@
 package com.example
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -13,7 +15,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -30,6 +31,8 @@ import com.example.data.model.ExtractorPost
 import com.example.data.model.TvChannel
 import com.example.data.repository.AuthRepository
 import com.example.data.repository.MediaRepository
+import com.example.data.util.AppLanguage
+import com.example.data.util.LanguageManager
 import com.example.ui.components.MukulPlusLogo
 import com.example.ui.screens.*
 import com.example.ui.theme.*
@@ -46,6 +49,7 @@ enum class ScreenTab(val title: String, val icon: ImageVector) {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        LanguageManager.init(applicationContext)
         enableEdgeToEdge()
         setContent {
             MyApplicationTheme {
@@ -70,23 +74,35 @@ fun MukulPlusApp() {
     var currentTab by remember { mutableStateOf(ScreenTab.HOME) }
     var selectedMovieId by remember { mutableStateOf<Long?>(null) }
     var selectedExtractorPost by remember { mutableStateOf<ExtractorPost?>(null) }
-    var showPaintingScreen by remember { mutableStateOf(false) }
-    var showAuthScreen by remember { mutableStateOf(false) }
     var showUpdateDialog by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
+
+    // -----------------------------------------------------------
+    // FORCED LOGIN GATEWAY:
+    // মুভির পেজে ঢুকতেই প্রথমে লগইন অপশন লাগবে (হুবহু ছবির মতো)
+    // লগইন বাদে অ্যাপ্লিকেশনে ঢোকা যাবে না।
+    // -----------------------------------------------------------
+    if (currentUser == null) {
+        AuthScreen(
+            authRepository = authRepository,
+            onAuthSuccess = {
+                // currentUser will automatically update via state flow
+            }
+        )
+        return
+    }
 
     // Handle Android system back button
     BackHandler(
-        enabled = selectedMovieId != null || selectedExtractorPost != null || showPaintingScreen || showAuthScreen
+        enabled = selectedMovieId != null || selectedExtractorPost != null
     ) {
         when {
-            showAuthScreen -> showAuthScreen = false
-            showPaintingScreen -> showPaintingScreen = false
             selectedMovieId != null -> selectedMovieId = null
             selectedExtractorPost != null -> selectedExtractorPost = null
         }
     }
 
-    // If detail screen is open (second page)
+    // If detail screen is open
     if (selectedMovieId != null || selectedExtractorPost != null) {
         MovieDetailScreen(
             movieId = selectedMovieId,
@@ -103,14 +119,6 @@ fun MukulPlusApp() {
                 selectedMovieId = newId
                 selectedExtractorPost = null
             }
-        )
-        return
-    }
-
-    // If painting screen is open (requested sidebar option)
-    if (showPaintingScreen) {
-        PaintingScreen(
-            onBack = { showPaintingScreen = false }
         )
         return
     }
@@ -136,55 +144,50 @@ fun MukulPlusApp() {
                     Card(
                         colors = CardDefaults.cardColors(containerColor = CinemaSurfaceVariant),
                         shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                coroutineScope.launch { drawerState.close() }
-                                currentTab = ScreenTab.PROFILE
-                            }
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
                             modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Surface(
                                 color = BrandRed,
                                 shape = CircleShape,
-                                modifier = Modifier.size(38.dp)
+                                modifier = Modifier.size(44.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = currentUser?.displayName?.firstOrNull()?.uppercase() ?: "U",
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 18.sp
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(24.dp)
                                     )
                                 }
                             }
+                            Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
-                                    text = currentUser?.displayName ?: "Guest User",
+                                    text = currentUser?.displayName ?: "User",
                                     color = Color.White,
+                                    fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    text = if (currentUser?.isGuest == true) "অতিথি (Guest)" else "VIP Member",
+                                    text = if (currentUser?.isGuest == true) "গেস্ট মেম্বার (Guest)" else (currentUser?.email ?: "প্রিমিয়াম ইউজার"),
                                     color = CyanAccent,
-                                    fontSize = 10.sp
+                                    fontSize = 11.sp
                                 )
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                     HorizontalDivider(color = CinemaBorder)
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Navigation Items
+                    // Drawer Navigation Items
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Home, contentDescription = null, tint = if (currentTab == ScreenTab.HOME) BrandRed else TextSecondary) },
                         label = { Text("হোম পেজ (Home)") },
@@ -198,7 +201,7 @@ fun MukulPlusApp() {
 
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Movie, contentDescription = null, tint = if (currentTab == ScreenTab.MOVIES) BrandRed else TextSecondary) },
-                        label = { Text("মুভি ও সিরিজ (Movies & Filter)") },
+                        label = { Text("মুভি ও সিরিজ ব্রাউজার") },
                         selected = currentTab == ScreenTab.MOVIES,
                         onClick = {
                             currentTab = ScreenTab.MOVIES
@@ -209,7 +212,7 @@ fun MukulPlusApp() {
 
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Tv, contentDescription = null, tint = if (currentTab == ScreenTab.LIVE_TV) BrandRed else TextSecondary) },
-                        label = { Text("লাইভ টিভি চ্যানেল (Live TV)") },
+                        label = { Text("বাংলাদেশী ও BDIX লাইভ টিভি") },
                         selected = currentTab == ScreenTab.LIVE_TV,
                         onClick = {
                             currentTab = ScreenTab.LIVE_TV
@@ -229,32 +232,20 @@ fun MukulPlusApp() {
                         colors = drawerItemColors()
                     )
 
-                    // Sidebar Painting Option
                     NavigationDrawerItem(
-                        icon = { Icon(Icons.Default.Brush, contentDescription = null, tint = GoldRating) },
-                        label = { Text("পেইন্টিং অপশন (Painting & Sketch)", color = GoldRating, fontWeight = FontWeight.Bold) },
+                        icon = { Icon(Icons.Default.Translate, contentDescription = null, tint = CyanAccent) },
+                        label = { Text("ভাষা পরিবর্তন (${LanguageManager.currentLanguage.displayName})", color = CyanAccent) },
                         selected = false,
                         onClick = {
                             coroutineScope.launch { drawerState.close() }
-                            showPaintingScreen = true
+                            showLanguageDialog = true
                         },
                         colors = drawerItemColors()
                     )
 
                     NavigationDrawerItem(
-                        icon = { Icon(Icons.Default.Person, contentDescription = null, tint = if (currentTab == ScreenTab.PROFILE) BrandRed else TextSecondary) },
-                        label = { Text("প্রোফাইল ও ওয়াচলিস্ট (Account)") },
-                        selected = currentTab == ScreenTab.PROFILE,
-                        onClick = {
-                            currentTab = ScreenTab.PROFILE
-                            coroutineScope.launch { drawerState.close() }
-                        },
-                        colors = drawerItemColors()
-                    )
-
-                    NavigationDrawerItem(
-                        icon = { Icon(Icons.Default.SystemUpdate, contentDescription = null, tint = CyanAccent) },
-                        label = { Text("অ্যাপ আপডেট (App Updates)", color = CyanAccent, fontWeight = FontWeight.SemiBold) },
+                        icon = { Icon(Icons.Default.SystemUpdate, contentDescription = null, tint = Color(0xFF10B981)) },
+                        label = { Text("অ্যাপ অটো-আপডেট (Firebase)", color = Color(0xFF10B981)) },
                         selected = false,
                         onClick = {
                             coroutineScope.launch { drawerState.close() }
@@ -263,45 +254,34 @@ fun MukulPlusApp() {
                         colors = drawerItemColors()
                     )
 
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Default.Person, contentDescription = null, tint = if (currentTab == ScreenTab.PROFILE) BrandRed else TextSecondary) },
+                        label = { Text("প্রোফাইল ও ওয়াচলিস্ট") },
+                        selected = currentTab == ScreenTab.PROFILE,
+                        onClick = {
+                            currentTab = ScreenTab.PROFILE
+                            coroutineScope.launch { drawerState.close() }
+                        },
+                        colors = drawerItemColors()
+                    )
+
                     Spacer(modifier = Modifier.weight(1f))
 
-                    // Bottom Drawer Action (Sign In or Logout)
-                    HorizontalDivider(color = CinemaBorder)
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    if (currentUser != null && !currentUser!!.isGuest) {
-                        Surface(
-                            onClick = {
+                    // Logout Button in Drawer
+                    OutlinedButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                drawerState.close()
                                 authRepository.logout()
-                                coroutineScope.launch { drawerState.close() }
-                            },
-                            color = CinemaSurfaceVariant,
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = Color(0xFFFF5252))
-                                Text("লগআউট (Log Out)", color = Color(0xFFFF5252), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                             }
-                        }
-                    } else {
-                        Button(
-                            onClick = {
-                                coroutineScope.launch { drawerState.close() }
-                                showAuthScreen = true
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = BrandRed),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Default.Login, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("লগইন / রেজিস্টার করুন", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
+                        },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = BrandRedLight),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.ExitToApp, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("লগআউট করুন (Sign Out)", fontSize = 12.sp)
                     }
                 }
             }
@@ -320,19 +300,18 @@ fun MukulPlusApp() {
                         }
                     },
                     actions = {
-                        // Quick Painting button in TopBar
-                        IconButton(onClick = { showPaintingScreen = true }) {
-                            Icon(imageVector = Icons.Default.Palette, contentDescription = "Painting", tint = GoldRating)
+                        // 10 Language Switcher Icon
+                        IconButton(onClick = { showLanguageDialog = true }) {
+                            Icon(imageVector = Icons.Default.Translate, contentDescription = "Languages", tint = CyanAccent)
                         }
 
-                        // Profile / Auth Avatar
-                        IconButton(onClick = {
-                            if (currentUser == null) {
-                                showAuthScreen = true
-                            } else {
-                                currentTab = ScreenTab.PROFILE
-                            }
-                        }) {
+                        // App Auto-Update Icon
+                        IconButton(onClick = { showUpdateDialog = true }) {
+                            Icon(imageVector = Icons.Default.SystemUpdate, contentDescription = "App Updates", tint = Color(0xFF10B981))
+                        }
+
+                        // Profile Avatar
+                        IconButton(onClick = { currentTab = ScreenTab.PROFILE }) {
                             Surface(
                                 color = BrandRed,
                                 shape = CircleShape,
@@ -367,13 +346,13 @@ fun MukulPlusApp() {
                             label = {
                                 Text(
                                     text = tab.title,
-                                    color = if (isSelected) BrandRedLight else TextMuted,
+                                    color = if (isSelected) Color.White else TextMuted,
                                     fontSize = 10.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                 )
                             },
                             colors = NavigationBarItemDefaults.colors(
-                                indicatorColor = CinemaSurfaceVariant
+                                indicatorColor = BrandRed.copy(alpha = 0.15f)
                             )
                         )
                     }
@@ -391,7 +370,9 @@ fun MukulPlusApp() {
                             mediaRepository = mediaRepository,
                             onSelectMovie = { id -> selectedMovieId = id },
                             onSelectPost = { post -> selectedExtractorPost = post },
-                            onSelectChannel = { channel -> currentTab = ScreenTab.LIVE_TV },
+                            onSelectChannel = { channel ->
+                                currentTab = ScreenTab.LIVE_TV
+                            },
                             onNavigateToMovies = { currentTab = ScreenTab.MOVIES },
                             onNavigateToLiveTv = { currentTab = ScreenTab.LIVE_TV },
                             onNavigateToExtractor = { currentTab = ScreenTab.EXTRACTOR }
@@ -400,7 +381,7 @@ fun MukulPlusApp() {
                     ScreenTab.MOVIES -> {
                         MoviesScreen(
                             mediaRepository = mediaRepository,
-                            onSelectMovie = { id -> selectedMovieId = id }
+                            onSelectMovie = { id: Long -> selectedMovieId = id }
                         )
                     }
                     ScreenTab.LIVE_TV -> {
@@ -414,85 +395,131 @@ fun MukulPlusApp() {
                         )
                     }
                     ScreenTab.PROFILE -> {
-                        if (currentUser != null) {
-                            ProfileScreen(
-                                user = currentUser!!,
-                                authRepository = authRepository,
-                                mediaRepository = mediaRepository,
-                                onSelectMovie = { id -> selectedMovieId = id },
-                                onLogout = { currentTab = ScreenTab.HOME }
-                            )
-                        } else {
-                            AuthScreen(
-                                authRepository = authRepository,
-                                onAuthSuccess = { currentTab = ScreenTab.HOME }
-                            )
-                        }
-                    }
-                }
-
-                // Auth Screen Overlay if opened from button
-                if (showAuthScreen) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        AuthScreen(
+                        ProfileScreen(
                             authRepository = authRepository,
-                            onAuthSuccess = { showAuthScreen = false }
+                            mediaRepository = mediaRepository,
+                            onSelectMovie = { id: Long -> selectedMovieId = id },
+                            onLogout = {
+                                coroutineScope.launch {
+                                    authRepository.logout()
+                                }
+                            }
                         )
-                        IconButton(
-                            onClick = { showAuthScreen = false },
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(16.dp)
-                        ) {
-                            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
-                        }
                     }
-                }
-
-                // App Update Dialog
-                if (showUpdateDialog) {
-                    AppUpdateDialog(onDismiss = { showUpdateDialog = false })
                 }
             }
         }
     }
+
+    // Language Selector Dialog (10 Languages)
+    if (showLanguageDialog) {
+        LanguageSelectionDialog(
+            onDismiss = { showLanguageDialog = false },
+            onLanguageSelected = { lang ->
+                LanguageManager.setLanguage(context, lang)
+                showLanguageDialog = false
+                Toast.makeText(context, "ভাষা পরিবর্তিত: ${lang.displayName}", Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+
+    // App Update Dialog
+    if (showUpdateDialog) {
+        AppUpdatesDialog(onDismiss = { showUpdateDialog = false })
+    }
 }
 
+// -------------------------------------------------------------
+// 10 LANGUAGES SELECTION DIALOG
+// -------------------------------------------------------------
 @Composable
-private fun AppUpdateDialog(onDismiss: () -> Unit) {
-    val context = LocalContext.current
+fun LanguageSelectionDialog(
+    onDismiss: () -> Unit,
+    onLanguageSelected: (AppLanguage) -> Unit
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = CinemaSurface,
-        titleContentColor = Color.White,
-        textContentColor = TextSecondary,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Translate, contentDescription = null, tint = CyanAccent)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("ভাষা নির্বাচন করুন (Select Language)", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                AppLanguage.values().forEach { lang ->
+                    val isSelected = LanguageManager.currentLanguage == lang
+                    Surface(
+                        color = if (isSelected) BrandRed.copy(alpha = 0.2f) else Color.Transparent,
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onLanguageSelected(lang) }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(text = "${lang.flag}  ${lang.displayName}", color = if (isSelected) CyanAccent else Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text(text = "Code: ${lang.code.uppercase()}", color = TextMuted, fontSize = 11.sp)
+                            }
+                            if (isSelected) {
+                                Icon(Icons.Default.Check, contentDescription = null, tint = CyanAccent)
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("বন্ধ করুন (Close)", color = TextSecondary)
+            }
+        }
+    )
+}
+
+// -------------------------------------------------------------
+// APP UPDATES DIALOG (Firebase & GitHub Remote Updater)
+// -------------------------------------------------------------
+@Composable
+fun AppUpdatesDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = CinemaSurface,
         icon = {
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .background(CyanAccent.copy(alpha = 0.15f), CircleShape),
+                    .background(Color(0xFF10B981).copy(alpha = 0.15f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.SystemUpdate,
                     contentDescription = null,
-                    tint = CyanAccent,
+                    tint = Color(0xFF10B981),
                     modifier = Modifier.size(28.dp)
                 )
             }
         },
         title = {
             Text(
-                text = "অ্যাপ আপডেট ও সংস্করণ",
+                text = "অটো-আপডেট ও রিমোট কনফিগ",
                 fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
+                fontSize = 17.sp,
                 color = Color.White
             )
         },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Surface(
                     color = CinemaSurfaceVariant,
@@ -505,13 +532,13 @@ private fun AppUpdateDialog(onDismiss: () -> Unit) {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("বর্তমান সংস্করণ:", color = TextSecondary, fontSize = 12.sp)
+                            Text("বর্তমান ভার্সন:", color = TextSecondary, fontSize = 12.sp)
                             Surface(
                                 color = BrandRed.copy(alpha = 0.2f),
                                 shape = RoundedCornerShape(4.dp)
                             ) {
                                 Text(
-                                    "v1.0 (Build 1)",
+                                    "v1.2 (Build 2)",
                                     color = BrandRedLight,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
@@ -524,22 +551,22 @@ private fun AppUpdateDialog(onDismiss: () -> Unit) {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("স্বয়ংক্রিয় বিল্ড:", color = TextSecondary, fontSize = 12.sp)
-                            Text("GitHub Actions", color = CyanAccent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            Text("ক্লাউড সার্ভিস:", color = TextSecondary, fontSize = 12.sp)
+                            Text("Firebase Remote Config", color = CyanAccent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("প্যাকেজ আইডি:", color = TextSecondary, fontSize = 11.sp)
-                            Text("mukulplus.otthub", color = TextMuted, fontSize = 10.sp)
+                            Text("স্বয়ংক্রিয় CI/CD:", color = TextSecondary, fontSize = 12.sp)
+                            Text("GitHub Actions APK", color = Color(0xFF10B981), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
 
                 Text(
-                    text = "GitHub Workflow প্রতিবার কোড পুশ বা রিলিজের সাথে সাথে স্বয়ংক্রিয়ভাবে নতুন APK তৈরি করে। আপনি যেকোনো সময় সরাসরি ডাউনলোড করতে পারবেন।",
+                    text = "ফায়ারবেস ও গিটহাব অ্যাকশনের মাধ্যমে অ্যাপে নতুন কোনো আপডেট আসলে তা স্বয়ংক্রিয়ভাবে ডাউনলোড ও আপডেট ইনস্টল করার নোটিফিকেশন আসবে।",
                     fontSize = 12.sp,
                     color = TextSecondary,
                     lineHeight = 17.sp
@@ -563,7 +590,7 @@ private fun AppUpdateDialog(onDismiss: () -> Unit) {
             ) {
                 Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("রিলিজ দেখুন", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text("আপডেট চেক করুন", fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {

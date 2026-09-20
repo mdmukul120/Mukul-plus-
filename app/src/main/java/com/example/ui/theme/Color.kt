@@ -19,6 +19,18 @@ val TextPrimary = Color(0xFFF8FAFC)
 val TextSecondary = Color(0xFF94A3B8)
 val TextMuted = Color(0xFF64748B)
 
+// Reference Image Auth & Onboarding Styling Colors
+val AuthBrandPrimary = Color(0xFFFA4D28)
+val AuthBrandGradientStart = Color(0xFFFF5E36)
+val AuthBrandGradientEnd = Color(0xFFE53915)
+val AuthBackground = Color(0xFFFFF8F4)
+val AuthSurface = Color(0xFFFFFFFF)
+val AuthInputBorder = Color(0xFFFA4D28)
+val AuthInputBg = Color(0xFFFBF8F6)
+val AuthTextDark = Color(0xFF1A1A1A)
+val AuthTextMuted = Color(0xFF666666)
+val AuthSocialBorder = Color(0xFFE5E7EB)
+
 // Material 3 Color Mappings
 val PrimaryDark = BrandRed
 val OnPrimaryDark = Color.White

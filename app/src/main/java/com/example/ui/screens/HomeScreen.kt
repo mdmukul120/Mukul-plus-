@@ -1,11 +1,13 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -13,10 +15,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,6 +30,7 @@ import coil.request.ImageRequest
 import com.example.data.api.ApiClient
 import com.example.data.model.*
 import com.example.data.repository.MediaRepository
+import com.example.data.util.LanguageManager
 import com.example.ui.components.HeroSlider
 import com.example.ui.components.MoviePosterCard
 import com.example.ui.theme.*
@@ -41,35 +47,55 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+
+    // Category movie lists
     var trendingMovies by remember { mutableStateOf<List<CtgMovie>>(emptyList()) }
+    var hollywoodMovies by remember { mutableStateOf<List<CtgMovie>>(emptyList()) }
     var bollywoodMovies by remember { mutableStateOf<List<CtgMovie>>(emptyList()) }
     var banglaMovies by remember { mutableStateOf<List<CtgMovie>>(emptyList()) }
+    var southActionMovies by remember { mutableStateOf<List<CtgMovie>>(emptyList()) }
+    var topRatedMovies by remember { mutableStateOf<List<CtgMovie>>(emptyList()) }
+    var animationMovies by remember { mutableStateOf<List<CtgMovie>>(emptyList()) }
     var providerPosts by remember { mutableStateOf<List<ExtractorPost>>(emptyList()) }
     var liveChannels by remember { mutableStateOf<List<TvChannel>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
-    val favorites by mediaRepository.favorites.collectAsState()
-
     LaunchedEffect(Unit) {
         isLoading = true
         try {
-            // Fetch trending
+            // 1. Trending
             val trendingRes = ApiClient.fetchCtgMovies(library = 1, page = 1, sort = "createdAt")
             trendingMovies = trendingRes.data
 
-            // Fetch bollywood
+            // 2. Live TV Channels (for circular display)
+            liveChannels = mediaRepository.getChannels()
+
+            // 3. Hollywood
+            val hollywoodRes = ApiClient.fetchCtgMovies(library = 1, page = 2, sort = "createdAt")
+            hollywoodMovies = hollywoodRes.data
+
+            // 4. Bollywood
             val bollywoodRes = ApiClient.fetchCtgMovies(library = 4, page = 1, sort = "createdAt")
             bollywoodMovies = bollywoodRes.data
 
-            // Fetch bangla
+            // 5. Bangla
             val banglaRes = ApiClient.fetchCtgMovies(library = 6, page = 1, sort = "createdAt")
             banglaMovies = banglaRes.data
 
-            // Fetch extractor posts
-            providerPosts = ApiClient.fetchExtractorPosts("moviesmod", page = 1)
+            // 6. South / Action
+            val southRes = ApiClient.fetchCtgMovies(genre = "Action", page = 1)
+            southActionMovies = southRes.data
 
-            // Fetch TV channels
-            liveChannels = mediaRepository.getChannels()
+            // 7. Top Rated
+            val topRatedRes = ApiClient.fetchCtgMovies(sort = "online_rating", sortOrder = "DESC", page = 1)
+            topRatedMovies = topRatedRes.data
+
+            // 8. Animation
+            val animRes = ApiClient.fetchCtgMovies(genre = "Animation", page = 1)
+            animationMovies = animRes.data
+
+            // 9. Extractor Posts
+            providerPosts = ApiClient.fetchExtractorPosts("moviesmod", page = 1)
         } catch (_: Exception) {
         } finally {
             isLoading = false
@@ -81,7 +107,9 @@ fun HomeScreen(
             .fillMaxSize()
             .background(CinemaBackground)
     ) {
-        // 1. Hero Image Slider / Carousel
+        // ----------------------------------------------------
+        // 1. HERO IMAGE SLIDER (সবার উপরে ইমেজ স্লাইডার)
+        // ----------------------------------------------------
         item {
             HeroSlider(
                 movies = trendingMovies,
@@ -91,118 +119,69 @@ fun HomeScreen(
             )
         }
 
-        // 2. Trending & New Releases Section
+        // ----------------------------------------------------
+        // 2. BANGLADESHI LIVE TV CHANNELS IN CIRCLES
+        // (ইমেজ স্লাইডার এর নিচে এবং সকল মুভির ক্যাটাগরি উপরে)
+        // ----------------------------------------------------
         item {
+            Spacer(modifier = Modifier.height(14.dp))
             SectionHeader(
-                title = "🔥 ট্রেন্ডিং ও নতুন রিলিজ (Trending)",
-                subtitle = "CtgHall এক্সক্লুসিভ কালেকশন",
-                onSeeAllClick = onNavigateToMovies
+                title = LanguageManager.get("bangla_tv"),
+                subtitle = "বাংলাদেশী লাইভ টিভি চ্যানেল (সার্কেল লিস্ট)",
+                onSeeAllClick = onNavigateToLiveTv
             )
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(trendingMovies) { movie ->
-                    MoviePosterCard(
-                        movie = movie,
-                        onClick = { onSelectMovie(movie.id) }
-                    )
-                }
-            }
-        }
 
-        // 3. Live TV Highlights Section
-        if (liveChannels.isNotEmpty()) {
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-                SectionHeader(
-                    title = "📺 লাইভ টিভি চ্যানেল (BDIX Live TV)",
-                    subtitle = "স্পোর্টস, নিউজ ও এন্টারটেইনমেন্ট",
-                    onSeeAllClick = onNavigateToLiveTv
-                )
-                val sportsAndNews = remember(liveChannels) {
-                    liveChannels.filter { it.groupTitle.contains("Sports", ignoreCase = true) || it.groupTitle.contains("News", ignoreCase = true) }.take(10)
-                }
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+            val displayChannels = remember(liveChannels) {
+                if (liveChannels.isNotEmpty()) {
+                    liveChannels.filter {
+                        it.groupTitle.contains("Bangla", ignoreCase = true) ||
+                        it.groupTitle.contains("News", ignoreCase = true) ||
+                        it.groupTitle.contains("Sports", ignoreCase = true) ||
+                        it.groupTitle.contains("General", ignoreCase = true)
+                    }.take(16).ifEmpty { liveChannels.take(16) }
+                } else emptyList()
+            }
+
+            if (displayChannels.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(80.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    items(sportsAndNews) { channel ->
-                        Card(
-                            modifier = Modifier
-                                .width(135.dp)
-                                .clickable { onSelectChannel(channel) },
-                            colors = CardDefaults.cardColors(containerColor = CinemaSurface),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(10.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(54.dp)
-                                        .background(Color.Black, shape = RoundedCornerShape(8.dp)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (!channel.logo.isNullOrEmpty()) {
-                                        AsyncImage(
-                                            model = ImageRequest.Builder(context)
-                                                .data(channel.logo)
-                                                .crossfade(true)
-                                                .build(),
-                                            contentDescription = channel.name,
-                                            contentScale = ContentScale.Fit,
-                                            modifier = Modifier.fillMaxSize()
-                                        )
-                                    } else {
-                                        Icon(
-                                            imageVector = Icons.Default.Tv,
-                                            contentDescription = null,
-                                            tint = CyanAccent,
-                                            modifier = Modifier.size(28.dp)
-                                        )
-                                    }
-                                }
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = channel.name,
-                                    color = Color.White,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    text = "🔴 LIVE",
-                                    color = BrandRed,
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Black
-                                )
-                            }
-                        }
+                    CircularProgressIndicator(color = BrandRed, strokeWidth = 2.dp, modifier = Modifier.size(24.dp))
+                }
+            } else {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    items(displayChannels) { channel ->
+                        CircularChannelAvatar(
+                            channel = channel,
+                            onClick = { onSelectChannel(channel) }
+                        )
                     }
                 }
             }
+            Spacer(modifier = Modifier.height(18.dp))
         }
 
-        // 4. Bollywood & Bangla Movies Section
-        if (bollywoodMovies.isNotEmpty() || banglaMovies.isNotEmpty()) {
+        // ----------------------------------------------------
+        // 3. CATEGORY 1: 🔥 TRENDING & NEW RELEASES
+        // ----------------------------------------------------
+        if (trendingMovies.isNotEmpty()) {
             item {
-                Spacer(modifier = Modifier.height(16.dp))
                 SectionHeader(
-                    title = "🍿 বলিউড ও বাংলা মুভি (Desi Hits)",
-                    subtitle = "হিন্দি ও বাংলা এইচডি মুভি",
+                    title = LanguageManager.get("trending"),
+                    subtitle = "CtgHall এক্সক্লুসিভ কালেকশন",
                     onSeeAllClick = onNavigateToMovies
                 )
-                val desiList = remember(bollywoodMovies, banglaMovies) {
-                    (banglaMovies.take(5) + bollywoodMovies.take(8))
-                }
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(desiList) { movie ->
+                    items(trendingMovies) { movie ->
                         MoviePosterCard(
                             movie = movie,
                             onClick = { onSelectMovie(movie.id) }
@@ -212,20 +191,172 @@ fun HomeScreen(
             }
         }
 
-        // 5. Multi-Provider Extractor Posts Section
+        // ----------------------------------------------------
+        // 4. CATEGORY 2: 🎬 HOLLYWOOD BLOCKBUSTERS
+        // ----------------------------------------------------
+        if (hollywoodMovies.isNotEmpty()) {
+            item {
+                Spacer(modifier = Modifier.height(18.dp))
+                SectionHeader(
+                    title = LanguageManager.get("hollywood"),
+                    subtitle = "হলিউড ড্রামা, সাই-ফাই ও থ্রিলার",
+                    onSeeAllClick = onNavigateToMovies
+                )
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(hollywoodMovies) { movie ->
+                        MoviePosterCard(
+                            movie = movie,
+                            onClick = { onSelectMovie(movie.id) }
+                        )
+                    }
+                }
+            }
+        }
+
+        // ----------------------------------------------------
+        // 5. CATEGORY 3: 🌟 BOLLYWOOD SUPERHITS
+        // ----------------------------------------------------
+        if (bollywoodMovies.isNotEmpty()) {
+            item {
+                Spacer(modifier = Modifier.height(18.dp))
+                SectionHeader(
+                    title = LanguageManager.get("bollywood"),
+                    subtitle = "বলিউডের সেরা সিনেমা ও মিউজিক্যাল হিটস",
+                    onSeeAllClick = onNavigateToMovies
+                )
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(bollywoodMovies) { movie ->
+                        MoviePosterCard(
+                            movie = movie,
+                            onClick = { onSelectMovie(movie.id) }
+                        )
+                    }
+                }
+            }
+        }
+
+        // ----------------------------------------------------
+        // 6. CATEGORY 4: 🇧🇩 BANGLA CINEMA & DRAMAS
+        // ----------------------------------------------------
+        if (banglaMovies.isNotEmpty()) {
+            item {
+                Spacer(modifier = Modifier.height(18.dp))
+                SectionHeader(
+                    title = LanguageManager.get("bangla_cinema"),
+                    subtitle = "ঢালিউড বাংলা সুপারহিট মুভি ও সিরিজ",
+                    onSeeAllClick = onNavigateToMovies
+                )
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(banglaMovies) { movie ->
+                        MoviePosterCard(
+                            movie = movie,
+                            onClick = { onSelectMovie(movie.id) }
+                        )
+                    }
+                }
+            }
+        }
+
+        // ----------------------------------------------------
+        // 7. CATEGORY 5: ⚡ SOUTH INDIAN ACTION (Hindi Dubbed)
+        // ----------------------------------------------------
+        if (southActionMovies.isNotEmpty()) {
+            item {
+                Spacer(modifier = Modifier.height(18.dp))
+                SectionHeader(
+                    title = LanguageManager.get("south_action"),
+                    subtitle = "সাউথ ইন্ডিয়ান ধামাকাদার অ্যাকশন",
+                    onSeeAllClick = onNavigateToMovies
+                )
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(southActionMovies) { movie ->
+                        MoviePosterCard(
+                            movie = movie,
+                            onClick = { onSelectMovie(movie.id) }
+                        )
+                    }
+                }
+            }
+        }
+
+        // ----------------------------------------------------
+        // 8. CATEGORY 6: 🏆 TOP RATED IMDb HITS
+        // ----------------------------------------------------
+        if (topRatedMovies.isNotEmpty()) {
+            item {
+                Spacer(modifier = Modifier.height(18.dp))
+                SectionHeader(
+                    title = LanguageManager.get("top_rated"),
+                    subtitle = "আইএমডিবি ৮+ রেটেড মাস্টারপিস কালেকশন",
+                    onSeeAllClick = onNavigateToMovies
+                )
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(topRatedMovies) { movie ->
+                        MoviePosterCard(
+                            movie = movie,
+                            onClick = { onSelectMovie(movie.id) }
+                        )
+                    }
+                }
+            }
+        }
+
+        // ----------------------------------------------------
+        // 9. CATEGORY 7: 🎨 ANIMATION & KIDS
+        // ----------------------------------------------------
+        if (animationMovies.isNotEmpty()) {
+            item {
+                Spacer(modifier = Modifier.height(18.dp))
+                SectionHeader(
+                    title = LanguageManager.get("animation"),
+                    subtitle = "ডিজনি, পিক্সার ও অ্যানিমেশন অ্যাডভেঞ্চার",
+                    onSeeAllClick = onNavigateToMovies
+                )
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(animationMovies) { movie ->
+                        MoviePosterCard(
+                            movie = movie,
+                            onClick = { onSelectMovie(movie.id) }
+                        )
+                    }
+                }
+            }
+        }
+
+        // ----------------------------------------------------
+        // 10. CATEGORY 8: 📥 FAST EXTRACTOR DOWNLOADS
+        // ----------------------------------------------------
         if (providerPosts.isNotEmpty()) {
             item {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(18.dp))
                 SectionHeader(
-                    title = "⚡ প্রোভাইডার ডাউনলোড লিংক (Downloads)",
-                    subtitle = "MoviesMod, TopMovies, UHD ও অন্যান্য",
+                    title = LanguageManager.get("fast_downloads"),
+                    subtitle = "MoviesMod, UHD, 480p, 720p, 1080p লিংক",
                     onSeeAllClick = onNavigateToExtractor
                 )
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(providerPosts.take(8)) { post ->
+                    items(providerPosts.take(10)) { post ->
                         Card(
                             modifier = Modifier
                                 .width(135.dp)
@@ -284,11 +415,112 @@ fun HomeScreen(
         }
 
         item {
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(40.dp))
         }
     }
 }
 
+// ==========================================
+// CIRCULAR TV CHANNEL COMPONENT
+// ==========================================
+@Composable
+private fun CircularChannelAvatar(
+    channel: TvChannel,
+    onClick: () -> Unit
+) {
+    val context = LocalContext.current
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .width(76.dp)
+            .clickable(onClick = onClick)
+    ) {
+        Box(
+            modifier = Modifier.size(68.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            // Glowing Gradient Border Ring
+            Box(
+                modifier = Modifier
+                    .size(68.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.sweepGradient(
+                            listOf(
+                                BrandRed,
+                                Color(0xFFFF5722),
+                                CyanAccent,
+                                BrandRed
+                            )
+                        )
+                    )
+            )
+
+            // Inner Circular Image
+            Box(
+                modifier = Modifier
+                    .size(62.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF10141E)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!channel.logo.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(channel.logo)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = channel.name,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .size(50.dp)
+                            .clip(CircleShape)
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Tv,
+                        contentDescription = null,
+                        tint = CyanAccent,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
+
+            // Red LIVE Dot Badge
+            Surface(
+                color = BrandRed,
+                shape = CircleShape,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .offset(y = 3.dp)
+            ) {
+                Text(
+                    text = "LIVE",
+                    color = Color.White,
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = channel.name,
+            color = Color.White,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+// ==========================================
+// SECTION HEADER
+// ==========================================
 @Composable
 private fun SectionHeader(
     title: String,
@@ -302,25 +534,32 @@ private fun SectionHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
                 color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = subtitle,
                 color = TextMuted,
-                fontSize = 11.sp
+                fontSize = 10.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
 
-        TextButton(onClick = onSeeAllClick) {
+        TextButton(
+            onClick = onSeeAllClick,
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+        ) {
             Text(
                 text = "সব দেখুন >",
                 color = CyanAccent,
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold
             )
         }

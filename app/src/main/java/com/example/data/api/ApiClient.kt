@@ -372,6 +372,66 @@ object ApiClient {
         }
     }
 
+    // 6b. Extractor Episodes List (POST /api/episodes)
+    suspend fun fetchExtractorEpisodes(url: String): List<DownloadLink> = withContext(Dispatchers.IO) {
+        try {
+            val endpoint = "https://api.sorrybrorewards.com/v2/extractor/api/episodes"
+            val payload = JSONObject().apply { put("url", url) }
+            val reqBody = payload.toString().toRequestBody("application/json".toMediaType())
+            val request = Request.Builder().url(endpoint).post(reqBody).build()
+            val response = client.newCall(request).execute()
+            val body = response.body?.string() ?: return@withContext emptyList()
+            val json = JSONObject(body)
+            val list = mutableListOf<DownloadLink>()
+            if (json.optBoolean("success")) {
+                val arr = json.optJSONArray("data") ?: JSONArray()
+                for (i in 0 until arr.length()) {
+                    val item = arr.optJSONObject(i) ?: continue
+                    val title = item.optString("title", "Episode ${i + 1}")
+                    val link = item.optString("link", "")
+                    if (link.isNotEmpty()) {
+                        list.add(DownloadLink(title = title, link = link, type = "episode", quality = "HD"))
+                    }
+                }
+            }
+            list
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching extractor episodes", e)
+            emptyList()
+        }
+    }
+
+    // 6c. Extractor Direct Stream & Download Servers (POST /api/stream)
+    suspend fun fetchExtractorStream(url: String): List<DownloadLink> = withContext(Dispatchers.IO) {
+        try {
+            val endpoint = "https://api.sorrybrorewards.com/v2/extractor/api/stream"
+            val payload = JSONObject().apply { put("url", url) }
+            val reqBody = payload.toString().toRequestBody("application/json".toMediaType())
+            val request = Request.Builder().url(endpoint).post(reqBody).build()
+            val response = client.newCall(request).execute()
+            val body = response.body?.string() ?: return@withContext emptyList()
+            val json = JSONObject(body)
+            val servers = mutableListOf<DownloadLink>()
+            if (json.optBoolean("success")) {
+                val data = json.optJSONObject("data") ?: return@withContext emptyList()
+                val serverArr = data.optJSONArray("servers") ?: JSONArray()
+                for (i in 0 until serverArr.length()) {
+                    val s = serverArr.optJSONObject(i) ?: continue
+                    val serverName = s.optString("server", "Server ${i + 1}")
+                    val link = s.optString("link", "")
+                    val type = s.optString("type", "video")
+                    if (link.isNotEmpty()) {
+                        servers.add(DownloadLink(title = serverName, link = link, type = type, quality = "Fast DL"))
+                    }
+                }
+            }
+            servers
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching extractor stream", e)
+            emptyList()
+        }
+    }
+
     // 7. Ayna BDIX IPTV Channels
     suspend fun fetchIptvChannels(): List<TvChannel> = withContext(Dispatchers.IO) {
         try {
