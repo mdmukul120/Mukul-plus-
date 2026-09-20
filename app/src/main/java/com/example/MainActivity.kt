@@ -1,5 +1,7 @@
 package com.example
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -70,6 +72,7 @@ fun MukulPlusApp() {
     var selectedExtractorPost by remember { mutableStateOf<ExtractorPost?>(null) }
     var showPaintingScreen by remember { mutableStateOf(false) }
     var showAuthScreen by remember { mutableStateOf(false) }
+    var showUpdateDialog by remember { mutableStateOf(false) }
 
     // Handle Android system back button
     BackHandler(
@@ -245,6 +248,17 @@ fun MukulPlusApp() {
                         onClick = {
                             currentTab = ScreenTab.PROFILE
                             coroutineScope.launch { drawerState.close() }
+                        },
+                        colors = drawerItemColors()
+                    )
+
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Default.SystemUpdate, contentDescription = null, tint = CyanAccent) },
+                        label = { Text("অ্যাপ আপডেট (App Updates)", color = CyanAccent, fontWeight = FontWeight.SemiBold) },
+                        selected = false,
+                        onClick = {
+                            coroutineScope.launch { drawerState.close() }
+                            showUpdateDialog = true
                         },
                         colors = drawerItemColors()
                     )
@@ -434,9 +448,133 @@ fun MukulPlusApp() {
                         }
                     }
                 }
+
+                // App Update Dialog
+                if (showUpdateDialog) {
+                    AppUpdateDialog(onDismiss = { showUpdateDialog = false })
+                }
             }
         }
     }
+}
+
+@Composable
+private fun AppUpdateDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = CinemaSurface,
+        titleContentColor = Color.White,
+        textContentColor = TextSecondary,
+        icon = {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(CyanAccent.copy(alpha = 0.15f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.SystemUpdate,
+                    contentDescription = null,
+                    tint = CyanAccent,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        },
+        title = {
+            Text(
+                text = "অ্যাপ আপডেট ও সংস্করণ",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = Color.White
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Surface(
+                    color = CinemaSurfaceVariant,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("বর্তমান সংস্করণ:", color = TextSecondary, fontSize = 12.sp)
+                            Surface(
+                                color = BrandRed.copy(alpha = 0.2f),
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Text(
+                                    "v1.0 (Build 1)",
+                                    color = BrandRedLight,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("স্বয়ংক্রিয় বিল্ড:", color = TextSecondary, fontSize = 12.sp)
+                            Text("GitHub Actions", color = CyanAccent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("প্যাকেজ আইডি:", color = TextSecondary, fontSize = 11.sp)
+                            Text("mukulplus.otthub", color = TextMuted, fontSize = 10.sp)
+                        }
+                    }
+                }
+
+                Text(
+                    text = "GitHub Workflow প্রতিবার কোড পুশ বা রিলিজের সাথে সাথে স্বয়ংক্রিয়ভাবে নতুন APK তৈরি করে। আপনি যেকোনো সময় সরাসরি ডাউনলোড করতে পারবেন।",
+                    fontSize = 12.sp,
+                    color = TextSecondary,
+                    lineHeight = 17.sp
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    try {
+                        val browserIntent = Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("https://github.com")
+                        )
+                        context.startActivity(browserIntent)
+                    } catch (_: Exception) {}
+                    onDismiss()
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = BrandRed),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("রিলিজ দেখুন", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary)
+            ) {
+                Text("বন্ধ করুন", fontSize = 12.sp)
+            }
+        }
+    )
 }
 
 @Composable

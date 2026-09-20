@@ -104,6 +104,7 @@ dependencies {
   implementation("androidx.media3:media3-datasource-okhttp:1.3.1")
 
   implementation(libs.converter.moshi)
+  implementation(libs.firebase.auth)
   implementation(libs.firebase.ai)
   implementation(libs.firebase.appcheck.recaptcha)
   implementation(libs.firebase.appcheck.debug)
